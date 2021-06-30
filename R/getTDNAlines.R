@@ -6,14 +6,14 @@
 
 getTDNAlines <- function(gene) {
 
-  geneconfirmed<-confirmed__exon_hom_sent[Target.Gene==gene]
-  lines<-unique(as.character(geneconfirmed$T.DNA.line))
+  geneconfirmed<-confirmed__exon_hom_sent[`Target Gene`==gene]
+  lines<-unique(as.character(geneconfirmed$`T-DNA line`))
 
   if(length(lines)>0){
 
- genegff<- gff[grep(paste0("ID=", gene), gff$V9)]
- genegff<-genegff[V3 %in% c("CDS","five_prime_UTR","three_prime_UTR")]
- cds<-genegff[V3=="CDS"]
+ genegff<- gff[grep(paste0("ID=", gene), gff$info)]
+ genegff<-genegff[type %in% c("CDS","five_prime_UTR","three_prime_UTR")]
+ cds<-genegff[type=="CDS"]
  cdspos<-unlist(apply(cds, 1, function(x) {
    x<-unlist(x)
    x[4]:x[5]
