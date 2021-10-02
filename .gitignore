@@ -6,3 +6,4 @@ R/rutter.R
 .DS_store
 .Rbuildignore
 tdna.Rproj
+.Rproj.user
