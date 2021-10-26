@@ -5,7 +5,7 @@
 # install and load
 ```
 library(devtools)
-install_github("greymonroe/tdna")
+install_github("greymonroe/tdna",dependencies = TRUE)
 library(tdna)
 #load the TDNA raw data
 loadTDNAdata()
