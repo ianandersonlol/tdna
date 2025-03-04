@@ -27,6 +27,12 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE, 
     stop("T-DNA data not loaded. Please run loadTDNAdata() first.")
   }
   
+  # Check for required packages when using interactive mode
+  if (interactive && !requireNamespace("plotly", quietly = TRUE)) {
+    warning("The plotly package is required for interactive plots. Falling back to static visualization.")
+    interactive <- FALSE
+  }
+  
   # Validate input
   if (!is.character(gene) || length(gene) != 1) {
     stop("Gene ID must be a single character string (e.g. \"AT1G25320\")")

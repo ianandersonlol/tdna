@@ -13,11 +13,15 @@ The `tdna` package provides tools to:
 ## Installation
 
 ```r
-# Install from GitHub
-if (!requireNamespace("devtools", quietly = TRUE))
-  install.packages("devtools")
+# Install required dependencies
+required_packages <- c("devtools", "data.table", "ggplot2", "ggrepel", "plotly", "scales", "R.utils")
+new_packages <- required_packages[!required_packages %in% installed.packages()[,"Package"]]
+if(length(new_packages)) install.packages(new_packages)
+
+# Install tdna from GitHub
 devtools::install_github("ianandersonlol/tdna")
 
+# Load the package
 library(tdna)
 ```
 

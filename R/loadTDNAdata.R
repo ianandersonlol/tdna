@@ -13,6 +13,11 @@
 #' @import data.table
 #' @export
 loadTDNAdata <- function() {
+  # Check for required packages
+  if (!requireNamespace("R.utils", quietly = TRUE)) {
+    stop("The R.utils package is required to read gzipped files. Please install it with: install.packages('R.utils')")
+  }
+  
   # Load gene annotations
   gff_file <- system.file("extdata", "Araport11_GFF3_genes_transposons.201606.gff.gz", package = "tdna")
   if (!file.exists(gff_file)) {
