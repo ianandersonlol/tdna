@@ -13,7 +13,11 @@
 #' # If experiencing issues with data loading:
 #' loadTDNAdata(force = TRUE, use_base_r = TRUE)
 #' @import data.table
+#' @importFrom utils install.packages read.delim remove.packages
 #' @export
+#' @importFrom utils globalVariables
+# Global variables
+utils::globalVariables(c("confirmed", "gff", "location"))
 loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   # Handle lazy loading corruption
   tryCatch({
@@ -57,6 +61,20 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   if (!requireNamespace("R.utils", quietly = TRUE)) {
     message("Installing R.utils package...")
     install.packages("R.utils", repos = "https://cran.rstudio.com/")
+  }
+  
+  # Check Bioconductor packages
+  if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    message("Installing BiocManager for Bioconductor packages...")
+    install.packages("BiocManager", repos = "https://cran.rstudio.com/")
+  }
+  
+  required_bioc <- c("GenomicRanges", "IRanges", "Gviz")
+  missing_bioc <- required_bioc[!sapply(required_bioc, requireNamespace, quietly = TRUE)]
+  
+  if (length(missing_bioc) > 0) {
+    message("Installing required Bioconductor packages: ", paste(missing_bioc, collapse = ", "))
+    BiocManager::install(missing_bioc)
   }
   
   message("Loading T-DNA datasets. This may take a moment...")
@@ -173,6 +191,35 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
     }
   }, error = function(e) {
     warning("Failed to load T-DNA sequence data")
+  })
+  
+  # Create a GRanges object for gene features (for visualization)
+  tryCatch({
+    if (requireNamespace("GenomicRanges", quietly = TRUE) && 
+        requireNamespace("IRanges", quietly = TRUE)) {
+      message("Creating genomic ranges for visualization...")
+      
+      # Create genomic ranges for genes
+      gene_features <- lapply(unique(gff$type), function(feature_type) {
+        features <- gff[gff$type == feature_type, ]
+        if(nrow(features) > 0) {
+          gr <- GenomicRanges::GRanges(
+            seqnames = features$chr,
+            ranges = IRanges::IRanges(start = features$start, end = features$stop),
+            strand = features$strand,
+            type = feature_type,
+            info = features$info
+          )
+          return(gr)
+        } else {
+          return(NULL)
+        }
+      })
+      gene_features <- do.call(c, gene_features[!sapply(gene_features, is.null)])
+      assign("gene_features_gr", gene_features, envir = .GlobalEnv)
+    }
+  }, error = function(e) {
+    warning("Could not create genomic ranges: ", e$message)
   })
   
   message("T-DNA datasets loaded successfully")

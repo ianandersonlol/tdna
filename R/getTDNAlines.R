@@ -14,7 +14,13 @@
 #' # Get T-DNA lines for a gene without known insertions
 #' getTDNAlines("AT1G20330")
 #' @import data.table
+#' @importFrom stats start
 #' @export
+#' @note This function relies on global variables loaded by loadTDNAdata()
+#' 
+#' @importFrom utils globalVariables
+# Global variables
+utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "location", "pos"))
 getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_UTR")) {
   verify_tdna_data()
   
@@ -84,4 +90,3 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   # Return T-DNA line identifiers
   return(locations$V1)
 }
-

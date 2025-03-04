@@ -1,22 +1,28 @@
 Package: tdna
 Type: Package
 Title: Tools for Visualizing and Analyzing T-DNA Insertion Lines in Arabidopsis
-Version: 0.2.1
+Version: 0.3.0
 Author: Grey Monroe <gmonroe@ucdavis.edu>
 Maintainer: Ian Anderson <icanderson@ucdavis.edu>
 Description: Provides an interface to search for and visualize T-DNA insertion 
     lines in Arabidopsis thaliana genes. Enables researchers to quickly identify 
-    knockout lines available for specific genes of interest with interactive 
-    visualization features.
-License: MIT
+    knockout lines available for specific genes of interest with high-quality
+    genomic visualizations.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: false
 Depends: R (>= 3.5.0)
 Imports: 
     data.table,
-    ggplot2,
-    ggrepel,
+    Gviz,
+    GenomicRanges,
+    IRanges,
+    R.utils,
+    grDevices,
+    stats,
+    utils
+Suggests:
+    BiocManager,
     plotly,
-    scales,
-    R.utils
-RoxygenNote: 7.2.3
+    devtools
+RoxygenNote: 7.3.2
