@@ -2,8 +2,8 @@ Package: tdna
 Type: Package
 Title: Tools for Visualizing and Analyzing T-DNA Insertion Lines in Arabidopsis
 Version: 0.2.0
-Author: Original author and contributors
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author: Grey Monroe <gmonroe@ucdavis.edu>
+Maintainer: Ian Anderson <icanderson@ucdavis.edu>
 Description: Provides an interface to search for and visualize T-DNA insertion 
     lines in Arabidopsis thaliana genes. Enables researchers to quickly identify 
     knockout lines available for specific genes of interest with interactive 

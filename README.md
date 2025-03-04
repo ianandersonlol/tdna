@@ -16,7 +16,7 @@ The `tdna` package provides tools to:
 # Install from GitHub
 if (!requireNamespace("devtools", quietly = TRUE))
   install.packages("devtools")
-devtools::install_github("greymonroe/tdna")
+devtools::install_github("ianandersonlol/tdna")
 
 library(tdna)
 ```
@@ -84,7 +84,7 @@ This package includes the following data:
 If you use this package in your research, please cite:
 
 ```
-# Add appropriate citation information here
+Grey -- What should we put for the citation? this github?
 ```
 
 ## License
