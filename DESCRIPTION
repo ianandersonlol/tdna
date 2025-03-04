@@ -1,7 +1,7 @@
 Package: tdna
 Type: Package
 Title: Tools for Visualizing and Analyzing T-DNA Insertion Lines in Arabidopsis
-Version: 0.2.0
+Version: 0.2.1
 Author: Grey Monroe <gmonroe@ucdavis.edu>
 Maintainer: Ian Anderson <icanderson@ucdavis.edu>
 Description: Provides an interface to search for and visualize T-DNA insertion 
@@ -10,7 +10,8 @@ Description: Provides an interface to search for and visualize T-DNA insertion
     visualization features.
 License: MIT
 Encoding: UTF-8
-LazyData: true
+LazyData: false
+Depends: R (>= 3.5.0)
 Imports: 
     data.table,
     ggplot2,

@@ -84,10 +84,20 @@ The interactive visualization (powered by plotly) provides:
 
 ## Troubleshooting
 
-If you encounter issues:
+If you encounter a "lazy-load database is corrupt" error:
 
 ```r
-# Fix data loading problems
+# Fix database corruption by reinstalling the package
+fixTDNAcorruption()
+
+# After fixing, reload the data and continue
+loadTDNAdata()
+```
+
+For other issues:
+
+```r
+# Use base R methods instead of data.table
 loadTDNAdata(force = TRUE, use_base_r = TRUE)
 
 # Create static visualization if plotly fails

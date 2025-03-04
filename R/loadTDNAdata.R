@@ -15,6 +15,33 @@
 #' @import data.table
 #' @export
 loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
+  # Handle lazy loading corruption
+  tryCatch({
+    if (exists("gff", envir = .GlobalEnv)) {
+      # Test if we can access the object
+      temp <- gff[1,1]
+    }
+    if (exists("confirmed", envir = .GlobalEnv)) {
+      temp <- confirmed[1,1]
+    }
+    if (exists("location", envir = .GlobalEnv)) {
+      temp <- location[1,1]
+    }
+  }, error = function(e) {
+    # If there's an error accessing existing objects, force reload
+    if (grepl("corrupt", e$message)) {
+      message("Detected corrupt database, forcing reload")
+      force <- TRUE
+      
+      # Clean up corrupted objects
+      if (exists("gff", envir = .GlobalEnv)) rm(gff, envir = .GlobalEnv)
+      if (exists("confirmed", envir = .GlobalEnv)) rm(confirmed, envir = .GlobalEnv)
+      if (exists("confirmed__exon_hom_sent", envir = .GlobalEnv)) rm(confirmed__exon_hom_sent, envir = .GlobalEnv)
+      if (exists("location", envir = .GlobalEnv)) rm(location, envir = .GlobalEnv)
+      if (exists("sequence_data", envir = .GlobalEnv)) rm(sequence_data, envir = .GlobalEnv)
+    }
+  })
+  
   if (!force && exists("gff", envir = .GlobalEnv) && 
       exists("confirmed", envir = .GlobalEnv) && 
       exists("location", envir = .GlobalEnv)) {
@@ -31,6 +58,8 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
     message("Installing R.utils package...")
     install.packages("R.utils", repos = "https://cran.rstudio.com/")
   }
+  
+  message("Loading T-DNA datasets. This may take a moment...")
   
   safe_read <- function(file_path, header = TRUE, is_gff = FALSE) {
     if (!file.exists(file_path)) {
@@ -74,11 +103,15 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   
   # Load gene annotations
   tryCatch({
+    message("Loading gene annotations...")
     gff_file <- system.file("extdata", "Araport11_GFF3_genes_transposons.201606.gff.gz", package = "tdna")
-    gff <<- safe_read(gff_file, header = FALSE, is_gff = TRUE)
+    gff_data <- safe_read(gff_file, header = FALSE, is_gff = TRUE)
+    
+    # Assign to global environment
+    assign("gff", gff_data, envir = .GlobalEnv)
     
     if (!use_base_r) {
-      colnames(gff) <<- c("chr", "source", "type", "start", "stop", "blank", "strand", "blank2", "info")
+      colnames(gff) <- c("chr", "source", "type", "start", "stop", "blank", "strand", "blank2", "info")
     }
   }, error = function(e) {
     stop("Failed to load gene annotations: ", e$message)
@@ -86,24 +119,37 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   
   # Load confirmed T-DNA insertions
   tryCatch({
+    message("Loading confirmed T-DNA insertions...")
     confirmed_file <- system.file("extdata", "sum_SALK_confirmed.txt.gz", package = "tdna")
-    confirmed <<- safe_read(confirmed_file)
+    confirmed_data <- safe_read(confirmed_file)
     
-    confirmed__exon_hom_sent <<- confirmed[confirmed$`Hit region` == "Exon" & 
-                                           confirmed$HM %in% c("HMc", "HMn") & 
-                                           confirmed$ABRC != "NotSent", ]
+    # Assign to global environment
+    assign("confirmed", confirmed_data, envir = .GlobalEnv)
     
-    confirmed__exon_hom_sent$`Target Gene` <<- toupper(confirmed__exon_hom_sent$`Target Gene`)
+    # Filter for homozygous exon insertions that were sent to stock center
+    confirmed_exon <- confirmed[confirmed$`Hit region` == "Exon" & 
+                               confirmed$HM %in% c("HMc", "HMn") & 
+                               confirmed$ABRC != "NotSent", ]
+    
+    confirmed_exon$`Target Gene` <- toupper(confirmed_exon$`Target Gene`)
+    
+    # Assign to global environment
+    assign("confirmed__exon_hom_sent", confirmed_exon, envir = .GlobalEnv)
   }, error = function(e) {
     stop("Failed to load T-DNA insertions: ", e$message)
   })
   
   # Load T-DNA insertion locations
   tryCatch({
+    message("Loading T-DNA insertion locations...")
     location_file <- system.file("extdata", "T-DNAall.Genes.Araport11.txt.gz", package = "tdna")
-    location <<- safe_read(location_file, header = FALSE)
+    location_data <- safe_read(location_file, header = FALSE)
     
-    location$pos <<- as.numeric(sapply(
+    # Assign to global environment
+    assign("location", location_data, envir = .GlobalEnv)
+    
+    # Extract position information
+    location$pos <- as.numeric(sapply(
       location$V5, 
       function(x) {
         tryCatch({
@@ -121,7 +167,9 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   tryCatch({
     seq_file <- system.file("extdata", "T-DNASeq.Genes.Araport11.txt.gz", package = "tdna")
     if (file.exists(seq_file)) {
-      sequence_data <<- safe_read(seq_file, header = FALSE)
+      message("Loading T-DNA sequence data...")
+      seq_data <- safe_read(seq_file, header = FALSE)
+      assign("sequence_data", seq_data, envir = .GlobalEnv)
     }
   }, error = function(e) {
     warning("Failed to load T-DNA sequence data")
@@ -140,6 +188,21 @@ verify_tdna_data <- function() {
   if (any(missing)) {
     loadTDNAdata(force = TRUE)
     return(invisible(TRUE))
+  }
+  
+  # Test objects for corruption
+  corrupt <- FALSE
+  tryCatch({
+    if (exists("gff", envir = .GlobalEnv)) temp <- gff[1,1]
+    if (exists("confirmed", envir = .GlobalEnv)) temp <- confirmed[1,1]
+    if (exists("location", envir = .GlobalEnv)) temp <- location[1,1]
+  }, error = function(e) {
+    corrupt <- TRUE
+  })
+  
+  if (corrupt) {
+    message("Found corrupted data. Reloading...")
+    loadTDNAdata(force = TRUE, use_base_r = TRUE)
   }
   
   valid <- TRUE
