@@ -16,15 +16,7 @@
 #' @import data.table
 #' @export
 getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_UTR")) {
-  # Verify data is loaded and valid
-  tryCatch({
-    verify_tdna_data()
-  }, error = function(e) {
-    # If verification fails with error, try reloading with base R
-    message("Error verifying data: ", e$message)
-    message("Attempting to reload data with base R...")
-    loadTDNAdata(force = TRUE, use_base_r = TRUE)
-  })
+  verify_tdna_data()
   
   # Validate input
   if (!is.character(gene) || length(gene) != 1) {

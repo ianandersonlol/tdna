@@ -26,54 +26,39 @@
 #' @export
 plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE, 
                           interactive = TRUE, use_base_r = FALSE) {
-  # Verify data is loaded and valid
-  tryCatch({
-    verify_tdna_data()
-  }, error = function(e) {
-    # If verification fails with error, try reloading with base R
-    message("Error verifying data: ", e$message)
-    message("Attempting to reload data with base R...")
-    loadTDNAdata(force = TRUE, use_base_r = TRUE)
-  })
+  verify_tdna_data()
   
-  # Check for required packages when using interactive mode
   if (interactive && !requireNamespace("plotly", quietly = TRUE)) {
-    warning("The plotly package is required for interactive plots. Falling back to static visualization.")
+    warning("plotly not found. Falling back to static visualization.")
     interactive <- FALSE
   }
   
-  # Validate input
+  # Basic input validation
   if (!is.character(gene) || length(gene) != 1) {
-    stop("Gene ID must be a single character string (e.g. \"AT1G25320\")")
+    stop("Gene ID must be a single character string")
   }
   
-  # Convert gene ID to uppercase for consistency
   gene <- toupper(gene)
   
-  # Get T-DNA lines
+  # Get T-DNA lines - continue even if this fails
   lines <- tryCatch({
     getTDNAlines(gene)
   }, error = function(e) {
-    message("Error getting T-DNA lines: ", e$message)
-    message("Continuing with plot using empty T-DNA lines set...")
     character(0)
   })
   
-  # Use data.table efficiently
+  # Get gene features
   genegff <- tryCatch({
     gff[grep(paste0("ID=", gene), gff$info)]
   }, error = function(e) {
-    message("Error filtering GFF data: ", e$message)
     if (use_base_r) {
-      stop("Cannot continue with plotting - GFF data is invalid.")
+      stop("Cannot continue - GFF data is invalid")
     } else {
-      message("Retrying with base R...")
       loadTDNAdata(force = TRUE, use_base_r = TRUE)
       gff[grep(paste0("ID=", gene), gff$info)]
     }
   })
   
-  # Exit if no gene features found
   if (nrow(genegff) == 0) {
     message(paste("No gene features found for", gene))
     return(NULL)
@@ -88,13 +73,9 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE,
     c("CDS", "five_prime_UTR", "three_prime_UTR")
   }
   
-  # Filter for regions of interest
   genegff <- genegff[type %in% feature_types]
-  
-  # Extract CDS for coordinate reference
   cds <- genegff[type == "CDS"]
   
-  # Exit if no CDS found
   if (nrow(cds) == 0) {
     message(paste("No coding sequences found for", gene))
     return(NULL)
@@ -102,42 +83,35 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE,
   
   # Get T-DNA insertion locations
   if (length(lines) > 0) {
-    # Pattern matching with efficient regex
     regex_pattern <- paste0("\\b(", paste(lines, collapse = "|"), ")\\b")
     
     matches <- tryCatch({
       grep(regex_pattern, location$V1)
     }, error = function(e) {
-      message("Error in pattern matching: ", e$message)
       integer(0)
     })
     
-    # Extract and filter locations
     if (length(matches) > 0) {
       locations <- tryCatch({
         locs <- location[matches]
         locs <- locs[, c("V1", "pos"), with = FALSE]
         locs <- unique(locs)
         
-        # Get CDS positions - do this more safely to avoid large vector issues
+        # For efficiency with large genes, sample positions
         cdspos <- unlist(
           lapply(1:nrow(cds), function(i) {
             start_pos <- cds[i, start]
             end_pos <- cds[i, stop]
-            # Limit the size of ranges to avoid memory issues
             if (end_pos - start_pos > 10000) {
-              message("Very large gene region detected, sampling positions...")
-              seq(start_pos, end_pos, by = 10)  # Sample every 10th position
+              seq(start_pos, end_pos, by = 10)  # Sample for large genes
             } else {
               start_pos:end_pos
             }
           })
         )
         
-        # Filter for positions in CDS
         locs[pos %in% cdspos]
       }, error = function(e) {
-        message("Error processing locations: ", e$message)
         data.table(V1 = character(0), pos = numeric(0))
       })
     } else {
@@ -160,13 +134,12 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE,
     "other" = "#F7F7F7"            # Light gray for other features
   )
   
-  # Plot gene model with ggplot2 - handle errors gracefully
+  # Create plot
   tryCatch({
     gene_min <- min(genegff$start)
     gene_max <- max(genegff$stop)
     gene_range <- gene_max - gene_min
     
-    # Set up the plot
     p <- ggplot() +
       # Base gene line
       geom_segment(aes(x = gene_min - gene_range * 0.05, 
@@ -264,10 +237,8 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE,
     # Create either interactive or static plot
     if (interactive) {
       tryCatch({
-        # Convert to interactive plotly
         plotly_plot <- plotly::ggplotly(p, tooltip = "text")
         
-        # Add layout customizations
         plotly_plot <- plotly_plot %>%
           plotly::layout(
             hovermode = "closest",
@@ -279,12 +250,10 @@ plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE,
         
         return(plotly_plot)
       }, error = function(e) {
-        message("Error creating interactive plot: ", e$message)
-        message("Falling back to static plot...")
+        warning("Interactive plot creation failed, falling back to static")
         return(p)
       })
     } else {
-      # Return static ggplot
       return(p)
     }
   }, error = function(e) {

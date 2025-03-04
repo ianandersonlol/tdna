@@ -84,12 +84,18 @@ The interactive visualization (powered by plotly) provides:
 
 ## Troubleshooting
 
-If you encounter issues with the package, try these options:
+If you encounter issues:
 
-1. **Data loading issues**: Use `loadTDNAdata(force = TRUE, use_base_r = TRUE)` to reload data using base R methods
-2. **Database corruption**: Reinstall the package with `devtools::install_github("ianandersonlol/tdna")`
-3. **Visualization issues**: Use `plotTDNAlines(..., interactive = FALSE)` to create static plots
-4. **Memory issues with large genes**: Use `plotTDNAlines(..., show_introns = FALSE)` to display less detail
+```r
+# Fix data loading problems
+loadTDNAdata(force = TRUE, use_base_r = TRUE)
+
+# Create static visualization if plotly fails
+plotTDNAlines("AT1G25320", interactive = FALSE)
+
+# For memory issues with large genes
+plotTDNAlines("AT1G25320", show_introns = FALSE)
+```
 
 ## Data Sources
 
