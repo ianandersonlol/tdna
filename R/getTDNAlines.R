@@ -90,10 +90,26 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
       # Handle different column naming
       if (!"start" %in% names(cds) && "V4" %in% names(cds)) {
         # Using V4 and V5 for start and stop (standard GFF format)
-        cds[i, "V4"]:cds[i, "V5"]
-      } else {
+        start_val <- cds[i, "V4"]
+        end_val <- cds[i, "V5"]
+        # Check for NA values
+        if (is.na(start_val) || is.na(end_val)) {
+          return(NULL)
+        }
+        start_val:end_val
+      } else if ("start" %in% names(cds) && "stop" %in% names(cds)) {
         # Using named columns
-        cds[i, "start"]:cds[i, "stop"]
+        start_val <- cds[i, "start"]
+        end_val <- cds[i, "stop"] 
+        # Check for NA values
+        if (is.na(start_val) || is.na(end_val)) {
+          return(NULL)
+        }
+        start_val:end_val
+      } else {
+        # If neither format is found
+        warning("Could not determine start/stop positions in CDS data")
+        return(NULL)
       }
     })
   )
