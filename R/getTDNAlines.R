@@ -20,7 +20,7 @@
 #' 
 #' @importFrom utils globalVariables
 # Global variables
-utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "location", "pos"))
+utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "V3", "location", "pos"))
 getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_UTR")) {
   verify_tdna_data()
   
@@ -42,10 +42,26 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   }
   
   # Get gene features from GFF
-  genegff <- gff[grep(paste0("ID=", gene), gff$info)]
+  if ("info" %in% names(gff)) {
+    # Using named columns
+    genegff <- gff[grep(paste0("ID=", gene), gff$info, ignore.case = TRUE), ]
+  } else if ("V9" %in% names(gff)) {
+    # Using V9 for info column (standard GFF format)
+    genegff <- gff[grep(paste0("ID=", gene), gff$V9, ignore.case = TRUE), ]
+  } else {
+    # If neither format is found
+    warning("GFF data format not recognized")
+    return(character(0))
+  }
   
-  # Filter for regions of interest
-  genegff <- genegff[type %in% region]
+  # Ensure type column is available (it may be named differently in some data.frame types)
+  if (!"type" %in% names(genegff) && "V3" %in% names(genegff)) {
+    # If 'type' column doesn't exist but we have V3 (standard GFF column ordering)
+    genegff <- genegff[genegff$V3 %in% region]
+  } else {
+    # Proceed with original column naming
+    genegff <- genegff[genegff$type %in% region]
+  }
   
   # No gene features found
   if (nrow(genegff) == 0) {
@@ -54,7 +70,13 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   }
   
   # Extract CDS positions
-  cds <- genegff[type == "CDS"]
+  if (!"type" %in% names(genegff) && "V3" %in% names(genegff)) {
+    # Using V3 column for type
+    cds <- genegff[genegff$V3 == "CDS"]
+  } else {
+    # Using original column naming
+    cds <- genegff[genegff$type == "CDS"]
+  }
   
   # Handle case with no CDS regions
   if (nrow(cds) == 0) {
@@ -62,12 +84,45 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
     return(character(0))
   }
   
-  # Generate positions more efficiently
-  cdspos <- unlist(
-    lapply(1:nrow(cds), function(i) {
-      cds[i, start]:cds[i, stop]
+  # Create a safer way to get positions
+  safe_get_pos <- function(start_col, end_col, row_idx) {
+    tryCatch({
+      start_val <- as.integer(cds[row_idx, start_col])
+      end_val <- as.integer(cds[row_idx, end_col])
+      
+      # Check for NA or non-numeric values
+      if (is.na(start_val) || is.na(end_val) || 
+          !is.numeric(start_val) || !is.numeric(end_val)) {
+        return(integer(0))
+      }
+      
+      # Generate sequence
+      start_val:end_val
+    }, error = function(e) {
+      # If any error occurs, return empty vector
+      integer(0)
     })
-  )
+  }
+  
+  # Generate positions more efficiently
+  all_positions <- list()
+  for (i in 1:nrow(cds)) {
+    pos <- integer(0)
+    
+    # Try different column naming conventions
+    if ("V4" %in% names(cds) && "V5" %in% names(cds)) {
+      pos <- safe_get_pos("V4", "V5", i)
+    } else if ("start" %in% names(cds) && "stop" %in% names(cds)) {
+      pos <- safe_get_pos("start", "stop", i)
+    }
+    
+    if (length(pos) > 0) {
+      all_positions[[i]] <- pos
+    }
+  }
+  
+  # Combine all positions
+  cdspos <- unlist(all_positions)
   
   # Find matches in location data
   # Pattern matching with efficient regex
@@ -81,11 +136,66 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   
   # Extract and filter locations
   locations <- location[matches]
-  locations <- locations[, c("V1", "pos"), with = FALSE]
+  
+  # Check if pos column exists
+  if (!"pos" %in% names(locations)) {
+    # Add pos column if it doesn't exist
+    if (!exists("pos", envir = .GlobalEnv)) {
+      # Create position data from scratch
+      locations$pos <- as.numeric(sapply(
+        locations$V5, 
+        function(x) {
+          tryCatch({
+            first_part <- unlist(strsplit(as.character(x), " vs "))[1]
+            if (is.na(first_part)) return(NA)
+            pos_parts <- unlist(strsplit(first_part, "-"))
+            if (length(pos_parts) > 0) return(as.numeric(pos_parts[1]))
+            return(NA)
+          }, error = function(e) {
+            return(NA)
+          })
+        }
+      ))
+    }
+  }
+  
+  # Extract necessary columns
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    # Check which columns exist
+    cols_to_select <- c("V1")
+    if ("pos" %in% names(locations)) {
+      cols_to_select <- c(cols_to_select, "pos")
+      locations <- locations[, cols_to_select, with = FALSE]
+    } else {
+      # Just select V1 if pos doesn't exist
+      locations <- locations[, "V1", with = FALSE]
+      # Return early if we can't filter by position
+      return(unique(locations$V1))
+    }
+  } else {
+    # Using base R
+    if ("pos" %in% names(locations)) {
+      locations <- locations[, c("V1", "pos")]
+    } else {
+      locations <- data.frame(V1 = locations$V1)
+      # Return early if we can't filter by position
+      return(unique(locations$V1))
+    }
+  }
+  
   locations <- unique(locations)
   
-  # Filter for positions that overlap with CDS
-  locations <- locations[pos %in% cdspos]
+  # Filter for positions that overlap with CDS, if possible
+  if ("pos" %in% names(locations) && length(cdspos) > 0) {
+    # Check if using data.table
+    if (requireNamespace("data.table", quietly = TRUE) && 
+        "data.table" %in% class(locations)) {
+      locations <- locations[pos %in% cdspos]
+    } else {
+      # Base R approach
+      locations <- locations[locations$pos %in% cdspos, ]
+    }
+  }
   
   # Return T-DNA line identifiers
   return(locations$V1)

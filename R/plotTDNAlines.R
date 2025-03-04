@@ -31,7 +31,7 @@
 #' @note This function relies on global variables loaded by loadTDNAdata()
 #' @importFrom utils globalVariables
 # Global variables
-utils::globalVariables(c("gff", "location", "pos"))
+utils::globalVariables(c("gff", "location", "pos", "V3", "V9"))
 plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE,
                          colorblind_friendly = TRUE, use_base_r = FALSE) {
   # Verify data is loaded
@@ -73,7 +73,17 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   })
   
   # Get gene features from GFF
-  gene_records <- gff[grep(paste0("ID=", gene, ";"), gff$info), ]
+  if ("info" %in% names(gff)) {
+    # Using named columns
+    gene_records <- gff[grep(paste0("ID=", gene), gff$info, ignore.case = TRUE), ]
+  } else if ("V9" %in% names(gff)) {
+    # Using V9 for info column (standard GFF format)
+    gene_records <- gff[grep(paste0("ID=", gene), gff$V9, ignore.case = TRUE), ]
+  } else {
+    # If neither format is found
+    message("GFF data format not recognized")
+    return(NULL)
+  }
   
   if (nrow(gene_records) == 0) {
     message(paste("No gene features found for", gene))
@@ -83,10 +93,20 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   message("Creating visualization for ", gene, "...")
   
   # Extract gene information
-  gene_chr <- unique(gene_records$chr)[1]
-  gene_start <- min(gene_records$start)
-  gene_end <- max(gene_records$stop)
-  gene_strand <- unique(gene_records$strand)[1]
+  # Handle different column naming conventions
+  if (!"chr" %in% names(gene_records) && "V1" %in% names(gene_records)) {
+    # Using standard GFF column ordering
+    gene_chr <- unique(gene_records$V1)[1]
+    gene_start <- min(gene_records$V4)
+    gene_end <- max(gene_records$V5)
+    gene_strand <- unique(gene_records$V7)[1]
+  } else {
+    # Using named columns
+    gene_chr <- unique(gene_records$chr)[1]
+    gene_start <- min(gene_records$start)
+    gene_end <- max(gene_records$stop)
+    gene_strand <- unique(gene_records$strand)[1]
+  }
   gene_width <- gene_end - gene_start
   
   # Define padding around gene
@@ -98,9 +118,18 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   chr_name <- gsub("Chr", "", gene_chr)
   
   # Extract exons, UTRs, etc.
-  exons <- gene_records[gene_records$type == "CDS", ]
-  five_utr <- gene_records[gene_records$type == "five_prime_UTR", ]
-  three_utr <- gene_records[gene_records$type == "three_prime_UTR", ]
+  # Check if we're using standard column names or V1, V2, V3, etc.
+  if (!"type" %in% names(gene_records) && "V3" %in% names(gene_records)) {
+    # Using V3 for type column (standard GFF column ordering)
+    exons <- gene_records[gene_records$V3 == "CDS", ]
+    five_utr <- gene_records[gene_records$V3 == "five_prime_UTR", ]
+    three_utr <- gene_records[gene_records$V3 == "three_prime_UTR", ]
+  } else {
+    # Using original column naming
+    exons <- gene_records[gene_records$type == "CDS", ]
+    five_utr <- gene_records[gene_records$type == "five_prime_UTR", ]
+    three_utr <- gene_records[gene_records$type == "three_prime_UTR", ]
+  }
   
   # Create Gviz tracks
   if (!requireNamespace("Gviz", quietly = TRUE)) {
@@ -137,34 +166,72 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   
   # Create exon GRanges
   if (nrow(exons) > 0) {
-    exon_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = exons$start, end = exons$stop),
-      strand = gene_strand
-    )
+    # Handle different column naming
+    if (!"start" %in% names(exons) && "V4" %in% names(exons)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      exon_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = exons$V4, end = exons$V5),
+        strand = gene_strand
+      )
+    } else {
+      # Using named columns
+      exon_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = exons$start, end = exons$stop),
+        strand = gene_strand
+      )
+    }
   } else {
     exon_ranges <- GenomicRanges::GRanges()
   }
   
   # Create UTR GRanges
   utr_ranges <- GenomicRanges::GRanges()
+  
+  # Handle five_prime_UTR
   if (nrow(five_utr) > 0) {
-    five_utr_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = five_utr$start, end = five_utr$stop),
-      strand = gene_strand,
-      feature = "5' UTR"
-    )
+    # Handle different column naming
+    if (!"start" %in% names(five_utr) && "V4" %in% names(five_utr)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      five_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = five_utr$V4, end = five_utr$V5),
+        strand = gene_strand,
+        feature = "5' UTR"
+      )
+    } else {
+      # Using named columns
+      five_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = five_utr$start, end = five_utr$stop),
+        strand = gene_strand,
+        feature = "5' UTR"
+      )
+    }
     utr_ranges <- c(utr_ranges, five_utr_ranges)
   }
   
+  # Handle three_prime_UTR
   if (nrow(three_utr) > 0) {
-    three_utr_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = three_utr$start, end = three_utr$stop),
-      strand = gene_strand,
-      feature = "3' UTR"
-    )
+    # Handle different column naming
+    if (!"start" %in% names(three_utr) && "V4" %in% names(three_utr)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      three_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = three_utr$V4, end = three_utr$V5),
+        strand = gene_strand,
+        feature = "3' UTR"
+      )
+    } else {
+      # Using named columns
+      three_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = three_utr$start, end = three_utr$stop),
+        strand = gene_strand,
+        feature = "3' UTR"
+      )
+    }
     utr_ranges <- c(utr_ranges, three_utr_ranges)
   }
   
@@ -177,17 +244,73 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
     
     if (length(matches) > 0) {
       locations <- location[matches]
-      locations <- locations[, c("V1", "pos"), with = FALSE]
+      
+      # Check if pos column exists
+      if (!"pos" %in% names(locations)) {
+        # Add pos column if it doesn't exist
+        locations$pos <- as.numeric(sapply(
+          locations$V5, 
+          function(x) {
+            tryCatch({
+              first_part <- unlist(strsplit(as.character(x), " vs "))[1]
+              if (is.na(first_part)) return(NA)
+              pos_parts <- unlist(strsplit(first_part, "-"))
+              if (length(pos_parts) > 0) return(as.numeric(pos_parts[1]))
+              return(NA)
+            }, error = function(e) {
+              return(NA)
+            })
+          }
+        ))
+      }
+      
+      # Extract necessary columns
+      if (requireNamespace("data.table", quietly = TRUE) && "data.table" %in% class(locations)) {
+        cols_to_select <- c("V1")
+        if ("pos" %in% names(locations)) {
+          cols_to_select <- c(cols_to_select, "pos")
+          locations <- locations[, cols_to_select, with = FALSE]
+        } else {
+          locations <- locations[, "V1", with = FALSE]
+        }
+      } else {
+        # Using base R
+        if ("pos" %in% names(locations)) {
+          locations <- locations[, c("V1", "pos")]
+        } else {
+          locations <- data.frame(V1 = locations$V1)
+        }
+      }
+      
       locations <- unique(locations)
       
-      # Filter for positions in the gene range
-      locations <- locations[pos >= gene_start & pos <= gene_end]
+      # Filter for positions in the gene range if pos column exists
+      if ("pos" %in% names(locations)) {
+        if (requireNamespace("data.table", quietly = TRUE) && "data.table" %in% class(locations)) {
+          locations <- locations[pos >= gene_start & pos <= gene_end]
+        } else {
+          locations <- locations[locations$pos >= gene_start & locations$pos <= gene_end, ]
+        }
+      }
       
       # Build GRanges for each insertion
-      if (nrow(locations) > 0) {
+      if (nrow(locations) > 0 && "pos" %in% names(locations)) {
+        # If we have positions, create ranges with positions
         insertion_ranges <- GenomicRanges::GRanges(
           seqnames = chr_name,
           ranges = IRanges::IRanges(start = locations$pos, width = 1),
+          strand = gene_strand,
+          id = locations$V1
+        )
+      } else if (nrow(locations) > 0) {
+        # If we don't have positions, create ranges at gene midpoint
+        midpoint <- gene_start + (gene_end - gene_start) / 2
+        insertion_ranges <- GenomicRanges::GRanges(
+          seqnames = chr_name,
+          ranges = IRanges::IRanges(
+            start = rep(midpoint, nrow(locations)), 
+            width = 1
+          ),
           strand = gene_strand,
           id = locations$V1
         )
@@ -318,16 +441,27 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   }
   
   # Return invisibly
+  if (length(insertion_ranges) > 0) {
+    # Try to get positions safely
+    pos_data <- tryCatch({
+      data.frame(
+        line = insertion_ranges$id,
+        position = as.numeric(GenomicRanges::start(insertion_ranges))
+      )
+    }, error = function(e) {
+      NULL
+    })
+  } else {
+    pos_data <- NULL
+  }
+  
   invisible(list(
     gene = gene,
     chromosome = chr_name,
     start = gene_start,
     end = gene_end,
     strand = gene_strand,
-    insertions = if (length(insertion_ranges) > 0) data.frame(
-      line = insertion_ranges$id,
-      position = as.numeric(GenomicRanges::start(insertion_ranges))
-    ) else NULL
+    insertions = pos_data
   ))
 }
 
