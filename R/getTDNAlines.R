@@ -136,11 +136,66 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   
   # Extract and filter locations
   locations <- location[matches]
-  locations <- locations[, c("V1", "pos"), with = FALSE]
+  
+  # Check if pos column exists
+  if (!"pos" %in% names(locations)) {
+    # Add pos column if it doesn't exist
+    if (!exists("pos", envir = .GlobalEnv)) {
+      # Create position data from scratch
+      locations$pos <- as.numeric(sapply(
+        locations$V5, 
+        function(x) {
+          tryCatch({
+            first_part <- unlist(strsplit(as.character(x), " vs "))[1]
+            if (is.na(first_part)) return(NA)
+            pos_parts <- unlist(strsplit(first_part, "-"))
+            if (length(pos_parts) > 0) return(as.numeric(pos_parts[1]))
+            return(NA)
+          }, error = function(e) {
+            return(NA)
+          })
+        }
+      ))
+    }
+  }
+  
+  # Extract necessary columns
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    # Check which columns exist
+    cols_to_select <- c("V1")
+    if ("pos" %in% names(locations)) {
+      cols_to_select <- c(cols_to_select, "pos")
+      locations <- locations[, cols_to_select, with = FALSE]
+    } else {
+      # Just select V1 if pos doesn't exist
+      locations <- locations[, "V1", with = FALSE]
+      # Return early if we can't filter by position
+      return(unique(locations$V1))
+    }
+  } else {
+    # Using base R
+    if ("pos" %in% names(locations)) {
+      locations <- locations[, c("V1", "pos")]
+    } else {
+      locations <- data.frame(V1 = locations$V1)
+      # Return early if we can't filter by position
+      return(unique(locations$V1))
+    }
+  }
+  
   locations <- unique(locations)
   
-  # Filter for positions that overlap with CDS
-  locations <- locations[pos %in% cdspos]
+  # Filter for positions that overlap with CDS, if possible
+  if ("pos" %in% names(locations) && length(cdspos) > 0) {
+    # Check if using data.table
+    if (requireNamespace("data.table", quietly = TRUE) && 
+        "data.table" %in% class(locations)) {
+      locations <- locations[pos %in% cdspos]
+    } else {
+      # Base R approach
+      locations <- locations[locations$pos %in% cdspos, ]
+    }
+  }
   
   # Return T-DNA line identifiers
   return(locations$V1)
