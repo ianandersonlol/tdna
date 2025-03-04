@@ -84,35 +84,45 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
     return(character(0))
   }
   
-  # Generate positions more efficiently
-  cdspos <- unlist(
-    lapply(1:nrow(cds), function(i) {
-      # Handle different column naming
-      if (!"start" %in% names(cds) && "V4" %in% names(cds)) {
-        # Using V4 and V5 for start and stop (standard GFF format)
-        start_val <- cds[i, "V4"]
-        end_val <- cds[i, "V5"]
-        # Check for NA values
-        if (is.na(start_val) || is.na(end_val)) {
-          return(NULL)
-        }
-        start_val:end_val
-      } else if ("start" %in% names(cds) && "stop" %in% names(cds)) {
-        # Using named columns
-        start_val <- cds[i, "start"]
-        end_val <- cds[i, "stop"] 
-        # Check for NA values
-        if (is.na(start_val) || is.na(end_val)) {
-          return(NULL)
-        }
-        start_val:end_val
-      } else {
-        # If neither format is found
-        warning("Could not determine start/stop positions in CDS data")
-        return(NULL)
+  # Create a safer way to get positions
+  safe_get_pos <- function(start_col, end_col, row_idx) {
+    tryCatch({
+      start_val <- as.integer(cds[row_idx, start_col])
+      end_val <- as.integer(cds[row_idx, end_col])
+      
+      # Check for NA or non-numeric values
+      if (is.na(start_val) || is.na(end_val) || 
+          !is.numeric(start_val) || !is.numeric(end_val)) {
+        return(integer(0))
       }
+      
+      # Generate sequence
+      start_val:end_val
+    }, error = function(e) {
+      # If any error occurs, return empty vector
+      integer(0)
     })
-  )
+  }
+  
+  # Generate positions more efficiently
+  all_positions <- list()
+  for (i in 1:nrow(cds)) {
+    pos <- integer(0)
+    
+    # Try different column naming conventions
+    if ("V4" %in% names(cds) && "V5" %in% names(cds)) {
+      pos <- safe_get_pos("V4", "V5", i)
+    } else if ("start" %in% names(cds) && "stop" %in% names(cds)) {
+      pos <- safe_get_pos("start", "stop", i)
+    }
+    
+    if (length(pos) > 0) {
+      all_positions[[i]] <- pos
+    }
+  }
+  
+  # Combine all positions
+  cdspos <- unlist(all_positions)
   
   # Find matches in location data
   # Pattern matching with efficient regex
