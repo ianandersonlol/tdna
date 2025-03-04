@@ -244,17 +244,73 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
     
     if (length(matches) > 0) {
       locations <- location[matches]
-      locations <- locations[, c("V1", "pos"), with = FALSE]
+      
+      # Check if pos column exists
+      if (!"pos" %in% names(locations)) {
+        # Add pos column if it doesn't exist
+        locations$pos <- as.numeric(sapply(
+          locations$V5, 
+          function(x) {
+            tryCatch({
+              first_part <- unlist(strsplit(as.character(x), " vs "))[1]
+              if (is.na(first_part)) return(NA)
+              pos_parts <- unlist(strsplit(first_part, "-"))
+              if (length(pos_parts) > 0) return(as.numeric(pos_parts[1]))
+              return(NA)
+            }, error = function(e) {
+              return(NA)
+            })
+          }
+        ))
+      }
+      
+      # Extract necessary columns
+      if (requireNamespace("data.table", quietly = TRUE) && "data.table" %in% class(locations)) {
+        cols_to_select <- c("V1")
+        if ("pos" %in% names(locations)) {
+          cols_to_select <- c(cols_to_select, "pos")
+          locations <- locations[, cols_to_select, with = FALSE]
+        } else {
+          locations <- locations[, "V1", with = FALSE]
+        }
+      } else {
+        # Using base R
+        if ("pos" %in% names(locations)) {
+          locations <- locations[, c("V1", "pos")]
+        } else {
+          locations <- data.frame(V1 = locations$V1)
+        }
+      }
+      
       locations <- unique(locations)
       
-      # Filter for positions in the gene range
-      locations <- locations[pos >= gene_start & pos <= gene_end]
+      # Filter for positions in the gene range if pos column exists
+      if ("pos" %in% names(locations)) {
+        if (requireNamespace("data.table", quietly = TRUE) && "data.table" %in% class(locations)) {
+          locations <- locations[pos >= gene_start & pos <= gene_end]
+        } else {
+          locations <- locations[locations$pos >= gene_start & locations$pos <= gene_end, ]
+        }
+      }
       
       # Build GRanges for each insertion
-      if (nrow(locations) > 0) {
+      if (nrow(locations) > 0 && "pos" %in% names(locations)) {
+        # If we have positions, create ranges with positions
         insertion_ranges <- GenomicRanges::GRanges(
           seqnames = chr_name,
           ranges = IRanges::IRanges(start = locations$pos, width = 1),
+          strand = gene_strand,
+          id = locations$V1
+        )
+      } else if (nrow(locations) > 0) {
+        # If we don't have positions, create ranges at gene midpoint
+        midpoint <- gene_start + (gene_end - gene_start) / 2
+        insertion_ranges <- GenomicRanges::GRanges(
+          seqnames = chr_name,
+          ranges = IRanges::IRanges(
+            start = rep(midpoint, nrow(locations)), 
+            width = 1
+          ),
           strand = gene_strand,
           id = locations$V1
         )
@@ -385,16 +441,27 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   }
   
   # Return invisibly
+  if (length(insertion_ranges) > 0) {
+    # Try to get positions safely
+    pos_data <- tryCatch({
+      data.frame(
+        line = insertion_ranges$id,
+        position = as.numeric(GenomicRanges::start(insertion_ranges))
+      )
+    }, error = function(e) {
+      NULL
+    })
+  } else {
+    pos_data <- NULL
+  }
+  
   invisible(list(
     gene = gene,
     chromosome = chr_name,
     start = gene_start,
     end = gene_end,
     strand = gene_strand,
-    insertions = if (length(insertion_ranges) > 0) data.frame(
-      line = insertion_ranges$id,
-      position = as.numeric(GenomicRanges::start(insertion_ranges))
-    ) else NULL
+    insertions = pos_data
   ))
 }
 
