@@ -83,10 +83,20 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   message("Creating visualization for ", gene, "...")
   
   # Extract gene information
-  gene_chr <- unique(gene_records$chr)[1]
-  gene_start <- min(gene_records$start)
-  gene_end <- max(gene_records$stop)
-  gene_strand <- unique(gene_records$strand)[1]
+  # Handle different column naming conventions
+  if (!"chr" %in% names(gene_records) && "V1" %in% names(gene_records)) {
+    # Using standard GFF column ordering
+    gene_chr <- unique(gene_records$V1)[1]
+    gene_start <- min(gene_records$V4)
+    gene_end <- max(gene_records$V5)
+    gene_strand <- unique(gene_records$V7)[1]
+  } else {
+    # Using named columns
+    gene_chr <- unique(gene_records$chr)[1]
+    gene_start <- min(gene_records$start)
+    gene_end <- max(gene_records$stop)
+    gene_strand <- unique(gene_records$strand)[1]
+  }
   gene_width <- gene_end - gene_start
   
   # Define padding around gene
@@ -98,9 +108,18 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   chr_name <- gsub("Chr", "", gene_chr)
   
   # Extract exons, UTRs, etc.
-  exons <- gene_records[gene_records$type == "CDS", ]
-  five_utr <- gene_records[gene_records$type == "five_prime_UTR", ]
-  three_utr <- gene_records[gene_records$type == "three_prime_UTR", ]
+  # Check if we're using standard column names or V1, V2, V3, etc.
+  if (!"type" %in% names(gene_records) && "V3" %in% names(gene_records)) {
+    # Using V3 for type column (standard GFF column ordering)
+    exons <- gene_records[gene_records$V3 == "CDS", ]
+    five_utr <- gene_records[gene_records$V3 == "five_prime_UTR", ]
+    three_utr <- gene_records[gene_records$V3 == "three_prime_UTR", ]
+  } else {
+    # Using original column naming
+    exons <- gene_records[gene_records$type == "CDS", ]
+    five_utr <- gene_records[gene_records$type == "five_prime_UTR", ]
+    three_utr <- gene_records[gene_records$type == "three_prime_UTR", ]
+  }
   
   # Create Gviz tracks
   if (!requireNamespace("Gviz", quietly = TRUE)) {
@@ -137,34 +156,72 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   
   # Create exon GRanges
   if (nrow(exons) > 0) {
-    exon_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = exons$start, end = exons$stop),
-      strand = gene_strand
-    )
+    # Handle different column naming
+    if (!"start" %in% names(exons) && "V4" %in% names(exons)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      exon_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = exons$V4, end = exons$V5),
+        strand = gene_strand
+      )
+    } else {
+      # Using named columns
+      exon_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = exons$start, end = exons$stop),
+        strand = gene_strand
+      )
+    }
   } else {
     exon_ranges <- GenomicRanges::GRanges()
   }
   
   # Create UTR GRanges
   utr_ranges <- GenomicRanges::GRanges()
+  
+  # Handle five_prime_UTR
   if (nrow(five_utr) > 0) {
-    five_utr_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = five_utr$start, end = five_utr$stop),
-      strand = gene_strand,
-      feature = "5' UTR"
-    )
+    # Handle different column naming
+    if (!"start" %in% names(five_utr) && "V4" %in% names(five_utr)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      five_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = five_utr$V4, end = five_utr$V5),
+        strand = gene_strand,
+        feature = "5' UTR"
+      )
+    } else {
+      # Using named columns
+      five_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = five_utr$start, end = five_utr$stop),
+        strand = gene_strand,
+        feature = "5' UTR"
+      )
+    }
     utr_ranges <- c(utr_ranges, five_utr_ranges)
   }
   
+  # Handle three_prime_UTR
   if (nrow(three_utr) > 0) {
-    three_utr_ranges <- GenomicRanges::GRanges(
-      seqnames = chr_name,
-      ranges = IRanges::IRanges(start = three_utr$start, end = three_utr$stop),
-      strand = gene_strand,
-      feature = "3' UTR"
-    )
+    # Handle different column naming
+    if (!"start" %in% names(three_utr) && "V4" %in% names(three_utr)) {
+      # Using V4 and V5 for start and stop (standard GFF format)
+      three_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = three_utr$V4, end = three_utr$V5),
+        strand = gene_strand,
+        feature = "3' UTR"
+      )
+    } else {
+      # Using named columns
+      three_utr_ranges <- GenomicRanges::GRanges(
+        seqnames = chr_name,
+        ranges = IRanges::IRanges(start = three_utr$start, end = three_utr$stop),
+        strand = gene_strand,
+        feature = "3' UTR"
+      )
+    }
     utr_ranges <- c(utr_ranges, three_utr_ranges)
   }
   

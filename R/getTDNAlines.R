@@ -44,8 +44,14 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   # Get gene features from GFF
   genegff <- gff[grep(paste0("ID=", gene), gff$info)]
   
-  # Filter for regions of interest
-  genegff <- genegff[type %in% region]
+  # Ensure type column is available (it may be named differently in some data.frame types)
+  if (!"type" %in% names(genegff) && "V3" %in% names(genegff)) {
+    # If 'type' column doesn't exist but we have V3 (standard GFF column ordering)
+    genegff <- genegff[genegff$V3 %in% region]
+  } else {
+    # Proceed with original column naming
+    genegff <- genegff[genegff$type %in% region]
+  }
   
   # No gene features found
   if (nrow(genegff) == 0) {
@@ -54,7 +60,13 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   }
   
   # Extract CDS positions
-  cds <- genegff[type == "CDS"]
+  if (!"type" %in% names(genegff) && "V3" %in% names(genegff)) {
+    # Using V3 column for type
+    cds <- genegff[genegff$V3 == "CDS"]
+  } else {
+    # Using original column naming
+    cds <- genegff[genegff$type == "CDS"]
+  }
   
   # Handle case with no CDS regions
   if (nrow(cds) == 0) {
@@ -65,7 +77,14 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   # Generate positions more efficiently
   cdspos <- unlist(
     lapply(1:nrow(cds), function(i) {
-      cds[i, start]:cds[i, stop]
+      # Handle different column naming
+      if (!"start" %in% names(cds) && "V4" %in% names(cds)) {
+        # Using V4 and V5 for start and stop (standard GFF format)
+        cds[i, "V4"]:cds[i, "V5"]
+      } else {
+        # Using named columns
+        cds[i, "start"]:cds[i, "stop"]
+      }
     })
   )
   
