@@ -2,10 +2,24 @@
 % Please edit documentation in R/loadTDNAdata.R
 \name{loadTDNAdata}
 \alias{loadTDNAdata}
-\title{load data for TDNA stuff}
+\title{Load T-DNA insertion data for Arabidopsis thaliana}
 \usage{
-loadTDNAdata()
+loadTDNAdata(force = FALSE, use_base_r = FALSE)
+}
+\arguments{
+\item{force}{Logical. If TRUE, forces reload of data even if already loaded. Default is FALSE.}
+
+\item{use_base_r}{Logical. If TRUE, uses base R functions instead of data.table. Default is FALSE.}
+}
+\value{
+Invisibly returns TRUE if data was loaded successfully
 }
 \description{
-load data for TDNA stuff
+This function loads the necessary datasets for T-DNA insertion analysis:
+1. Gene annotations from Araport11 (GFF format)
+2. Confirmed T-DNA insertions
+3. T-DNA insertion locations
+}
+\examples{
+loadTDNAdata()
 }

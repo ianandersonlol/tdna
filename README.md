@@ -7,8 +7,8 @@ An R package for visualizing and analyzing T-DNA insertion lines in Arabidopsis 
 The `tdna` package provides tools to:
 
 1. Quickly identify T-DNA insertion lines available for a specific gene
-2. Visualize gene structure with T-DNA insertion sites
-3. Interactively explore gene features and T-DNA insertions with detailed information
+2. Visualize gene structure with T-DNA insertion sites in a publication-quality format
+3. Generate Ensembl/UCSC-style genomic visualizations with detailed gene features
 
 ## Installation
 
@@ -42,14 +42,14 @@ lines
 ### Visualize T-DNA insertion sites in gene context
 
 ```r
-# Create an interactive visualization of T-DNA insertions within gene structure
+# Create a publication-quality visualization of T-DNA insertions within gene structure
 plotTDNAlines("AT1G25320")
 
-# Create a static visualization
-plotTDNAlines("AT1G25320", interactive = FALSE)
+# Show chromosome context
+plotTDNAlines("AT1G25320", show_chromosome_context = TRUE)
 
-# Show all genomic features including introns
-plotTDNAlines("AT1G25320", show_all_features = TRUE)
+# Customize with a standard color scheme
+plotTDNAlines("AT1G25320", colorblind_friendly = FALSE)
 ```
 
 ### Example of gene without available T-DNA lines
@@ -62,14 +62,16 @@ getTDNAlines("AT1G20330")
 plotTDNAlines("AT1G20330")
 ```
 
-## Interactive Features
+## Visualization Features
 
-The interactive visualization (powered by plotly) provides:
+The new Gviz-based visualization provides:
 
-- Hover tooltips with detailed information about gene features
-- Information about T-DNA insertion lines including homozygosity status
-- Ability to zoom, pan, and export the visualization
-- Clear indication of gene structure with exons, UTRs, and direction
+- Publication-quality gene model visualization similar to genome browsers
+- Proper representation of introns, exons, UTRs, and gene structure
+- Clear indication of T-DNA insertion sites with line IDs
+- Chromosome context and genomic coordinates
+- Colorblind-friendly color scheme by default
+- Interactive tooltips when viewing in R (hover over features for details)
 
 ## Data Sources
 
@@ -84,7 +86,7 @@ This package includes the following data:
 If you use this package in your research, please cite:
 
 ```
-Grey -- What should we put for the citation? this github?
+Anderson, I.C., Monroe, G.R. (2023). tdna: Tools for Visualizing and Analyzing T-DNA Insertion Lines in Arabidopsis. https://github.com/ianandersonlol/tdna
 ```
 
 ## License

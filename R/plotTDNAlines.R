@@ -1,235 +1,329 @@
-#' Plot T-DNA insertion lines in a gene with interactive visualization
+#' Plot T-DNA insertion lines in a gene with high-quality genomic visualization
 #'
-#' Creates an interactive visualization of T-DNA insertion locations within
-#' a gene structure. The plot shows coding sequences (CDS), UTRs, and marks
-#' T-DNA insertion points with information available on hover.
+#' Creates a publication-quality visualization of T-DNA insertion locations within
+#' a gene structure. The visualization shows exons, introns, UTRs, and marks
+#' T-DNA insertion points clearly. The style is similar to genome browsers
+#' like Ensembl with a clean, professional appearance.
 #'
 #' @param gene A character string specifying the Arabidopsis gene ID (e.g. "AT1G25320")
-#' @param show_introns Logical indicating whether to display introns. Default is TRUE
-#' @param show_all_features Logical indicating whether to display all genomic features. Default is FALSE
-#' @param interactive Logical indicating whether to create an interactive plot (using plotly). Default is TRUE
-#' @return A plotly or ggplot object (depending on interactive parameter)
+#' @param show_axis Logical indicating whether to display the genomic axis. Default is TRUE.
+#' @param show_chromosome_context Logical indicating whether to show chromosome context. Default is TRUE.
+#' @param colorblind_friendly Logical indicating whether to use a colorblind-friendly palette. Default is TRUE.
+#' @param use_base_r Logical indicating whether to use base R functions if encountering issues. Default is FALSE.
+#' @return A Gviz track plot object
 #' @examples
-#' # Load the data
+#' # Load the data first
 #' loadTDNAdata()
-#' # Plot T-DNA lines for a gene with known insertions
+#' 
+#' # Plot gene with T-DNA insertions
 #' plotTDNAlines("AT1G25320")
-#' # Plot T-DNA lines for a gene without known insertions
+#' 
+#' # Plot a gene without known insertions
 #' plotTDNAlines("AT1G20330")
 #' @import data.table
-#' @import ggplot2
-#' @import ggrepel
-#' @importFrom plotly ggplotly layout config
+#' @importFrom GenomicRanges GRanges 
+#' @importFrom IRanges IRanges
+#' @importFrom grDevices colorRampPalette
+#' @importFrom utils install.packages
 #' @export
-plotTDNAlines <- function(gene, show_introns = TRUE, show_all_features = FALSE, interactive = TRUE) {
-  # Check if data is loaded
-  if (!exists("confirmed__exon_hom_sent", envir = .GlobalEnv)) {
-    stop("T-DNA data not loaded. Please run loadTDNAdata() first.")
+#' @note This function relies on global variables loaded by loadTDNAdata()
+#' @importFrom utils globalVariables
+# Global variables
+utils::globalVariables(c("gff", "location", "pos"))
+plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE,
+                         colorblind_friendly = TRUE, use_base_r = FALSE) {
+  # Ensure required packages are installed
+  required_pkgs <- c("Gviz", "GenomicRanges", "IRanges")
+  for (pkg in required_pkgs) {
+    if (!requireNamespace(pkg, quietly = TRUE)) {
+      if (!requireNamespace("BiocManager", quietly = TRUE)) {
+        install.packages("BiocManager")
+      }
+      BiocManager::install(pkg)
+    }
   }
   
-  # Validate input
-  if (!is.character(gene) || length(gene) != 1) {
-    stop("Gene ID must be a single character string (e.g. \"AT1G25320\")")
-  }
+  # Verify data is loaded
+  verify_tdna_data()
   
-  # Convert gene ID to uppercase for consistency
+  # Convert gene ID to uppercase
   gene <- toupper(gene)
   
   # Get T-DNA lines
-  lines <- getTDNAlines(gene)
+  tdna_lines <- tryCatch({
+    getTDNAlines(gene)
+  }, error = function(e) {
+    message("Error retrieving T-DNA lines: ", e$message)
+    character(0)
+  })
   
-  # Use data.table efficiently
-  genegff <- gff[grep(paste0("ID=", gene), gff$info)]
+  # Get gene features from GFF
+  gene_records <- gff[grep(paste0("ID=", gene, ";"), gff$info), ]
   
-  # Exit if no gene features found
-  if (nrow(genegff) == 0) {
+  if (nrow(gene_records) == 0) {
     message(paste("No gene features found for", gene))
     return(NULL)
   }
   
-  # Define regions to include
-  feature_types <- if(show_all_features) {
-    unique(genegff$type)
-  } else if(show_introns) {
-    c("CDS", "five_prime_UTR", "three_prime_UTR", "intron")
-  } else {
-    c("CDS", "five_prime_UTR", "three_prime_UTR")
+  message("Creating visualization for ", gene, "...")
+  
+  # Extract gene information
+  gene_chr <- unique(gene_records$chr)[1]
+  gene_start <- min(gene_records$start)
+  gene_end <- max(gene_records$stop)
+  gene_strand <- unique(gene_records$strand)[1]
+  gene_width <- gene_end - gene_start
+  
+  # Define padding around gene
+  padding <- gene_width * 0.1
+  plot_start <- max(1, gene_start - padding)
+  plot_end <- gene_end + padding
+  
+  # Define genomic coordinates for plotting
+  chr_name <- gsub("Chr", "", gene_chr)
+  
+  # Extract exons, UTRs, etc.
+  exons <- gene_records[gene_records$type == "CDS", ]
+  five_utr <- gene_records[gene_records$type == "five_prime_UTR", ]
+  three_utr <- gene_records[gene_records$type == "three_prime_UTR", ]
+  
+  # Create Gviz tracks
+  if (!requireNamespace("Gviz", quietly = TRUE)) {
+    stop("Gviz package is required but not available")
   }
   
-  # Filter for regions of interest
-  genegff <- genegff[type %in% feature_types]
-  
-  # Extract CDS for coordinate reference
-  cds <- genegff[type == "CDS"]
-  
-  # Exit if no CDS found
-  if (nrow(cds) == 0) {
-    message(paste("No coding sequences found for", gene))
-    return(NULL)
-  }
-  
-  # Get T-DNA insertion locations
-  if (length(lines) > 0) {
-    # Pattern matching with efficient regex
-    regex_pattern <- paste0("\\b(", paste(lines, collapse = "|"), ")\\b")
-    matches <- grep(regex_pattern, location$V1)
-    
-    # Extract and filter locations
-    locations <- location[matches]
-    locations <- locations[, c("V1", "pos"), with = FALSE]
-    locations <- unique(locations)
-    
-    # Get CDS positions
-    cdspos <- unlist(
-      lapply(1:nrow(cds), function(i) {
-        cds[i, start]:cds[i, stop]
-      })
+  # Set color scheme
+  if (colorblind_friendly) {
+    # Colorblind-friendly palette (Blue, Orange, Teal)
+    colors <- c(
+      exon = "#2166AC",       # Dark blue
+      utr = "#92C5DE",        # Light blue
+      intron = "#D1E5F0",     # Very light blue
+      insertion = "#D7191C",  # Red for insertions
+      chromosome = "#ABDDA4"  # Pale green
     )
-    
-    # Filter for positions in CDS
-    locations <- locations[pos %in% cdspos]
   } else {
-    locations <- data.table(V1 = character(0), pos = numeric(0))
+    # Standard colors
+    colors <- c(
+      exon = "darkblue",
+      utr = "lightblue",
+      intron = "grey80",
+      insertion = "red",
+      chromosome = "darkgreen"
+    )
   }
   
-  # Get gene strand for direction
-  strand <- unique(genegff$strand)[1]
-  
-  # Color palette for gene features
-  feature_colors <- c(
-    "CDS" = "#2166AC",             # Blue for coding sequences
-    "five_prime_UTR" = "#92C5DE",  # Light blue for 5' UTR
-    "three_prime_UTR" = "#4393C3", # Medium blue for 3' UTR
-    "intron" = "#D1E5F0",          # Very light blue for introns
-    "promoter" = "#B2ABD2",        # Purple for promoters
-    "other" = "#F7F7F7"            # Light gray for other features
+  # Create a GRanges object for the whole gene
+  gene_range <- GenomicRanges::GRanges(
+    seqnames = chr_name,
+    ranges = IRanges::IRanges(start = gene_start, end = gene_end),
+    strand = gene_strand
   )
   
-  # Plot gene model with ggplot2
-  gene_min <- min(genegff$start)
-  gene_max <- max(genegff$stop)
-  gene_range <- gene_max - gene_min
-  
-  # Set up the plot
-  p <- ggplot() +
-    # Base gene line
-    geom_segment(aes(x = gene_min - gene_range * 0.05, 
-                     xend = gene_max + gene_range * 0.05,
-                     y = 1, yend = 1), 
-                 color = "gray50", size = 0.5) +
-    # Genomic features
-    geom_rect(data = genegff, 
-              aes(xmin = start, xmax = stop, 
-                  ymin = ifelse(type == "CDS", 0.75, 0.9),
-                  ymax = ifelse(type == "CDS", 1.25, 1.1),
-                  fill = type,
-                  text = paste0("Type: ", type,
-                                "<br>Start: ", start,
-                                "<br>End: ", stop)
-              )) +
-    # Scale to fit gene with padding
-    scale_x_continuous(limits = c(gene_min - gene_range * 0.05, 
-                                  gene_max + gene_range * 0.05),
-                       labels = scales::comma) +
-    # Colors for gene features
-    scale_fill_manual(values = feature_colors) +
-    # Transcription direction arrow
-    {
-      if (strand == "+") {
-        geom_segment(aes(x = gene_max + gene_range * 0.02, 
-                         xend = gene_max + gene_range * 0.04,
-                         y = 1, yend = 1), 
-                     arrow = arrow(length = unit(0.2, "cm")),
-                     color = "black")
-      } else if (strand == "-") {
-        geom_segment(aes(x = gene_min - gene_range * 0.02, 
-                         xend = gene_min - gene_range * 0.04,
-                         y = 1, yend = 1), 
-                     arrow = arrow(length = unit(0.2, "cm")),
-                     color = "black")
-      } else {
-        NULL
-      }
-    } +
-    # Labels and theme
-    labs(title = paste0(gene, " gene structure and T-DNA insertions"),
-         x = "Genomic position", 
-         y = "", 
-         fill = "Feature") +
-    theme_minimal() +
-    theme(axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          panel.grid.major.y = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          legend.position = "bottom",
-          plot.title = element_text(face = "bold"),
-          legend.title = element_text(size = 8),
-          legend.text = element_text(size = 8))
-  
-  # Add T-DNA insertion markers if any exist
-  if (nrow(locations) > 0) {
-    # Get T-DNA insertion info for hover text
-    tdna_hover <- lapply(locations$V1, function(line_id) {
-      line_info <- confirmed[`T-DNA line` == line_id]
-      if (nrow(line_info) > 0) {
-        paste0("Line: ", line_id,
-               "<br>Target: ", line_info$`Target Gene`[1],
-               "<br>Hit region: ", line_info$`Hit region`[1],
-               "<br>Homozygosity: ", line_info$HM[1])
-      } else {
-        paste0("Line: ", line_id)
-      }
-    })
-    
-    locations$hover <- unlist(tdna_hover)
-    
-    # Add T-DNA markers to plot
-    p <- p + 
-      geom_segment(data = locations,
-                  aes(x = pos, xend = pos,
-                      y = 0.6, yend = 1.4,
-                      color = "T-DNA insertion",
-                      text = hover),
-                  size = 1, linetype = "dashed") +
-      scale_color_manual(values = c("T-DNA insertion" = "#D7191C")) +
-      geom_label_repel(data = locations,
-                       aes(x = pos, y = 1.5, 
-                           label = V1,
-                           text = hover),
-                       nudge_y = 0.2,
-                       color = "#D7191C",
-                       size = 3)
-  }
-  
-  # Create either interactive or static plot
-  if (interactive) {
-    # Convert to interactive plotly
-    plotly_plot <- plotly::ggplotly(p, tooltip = "text")
-    
-    # Add layout customizations
-    plotly_plot <- plotly_plot %>%
-      plotly::layout(
-        hovermode = "closest",
-        hoverdistance = 5,
-        legend = list(orientation = "h", y = -0.2),
-        margin = list(t = 50, r = 50, b = 50, l = 50)
-      ) %>%
-      plotly::config(displayModeBar = TRUE)
-    
-    return(plotly_plot)
+  # Create exon GRanges
+  if (nrow(exons) > 0) {
+    exon_ranges <- GenomicRanges::GRanges(
+      seqnames = chr_name,
+      ranges = IRanges::IRanges(start = exons$start, end = exons$stop),
+      strand = gene_strand
+    )
   } else {
-    # Return static ggplot
-    return(p)
+    exon_ranges <- GenomicRanges::GRanges()
   }
+  
+  # Create UTR GRanges
+  utr_ranges <- GenomicRanges::GRanges()
+  if (nrow(five_utr) > 0) {
+    five_utr_ranges <- GenomicRanges::GRanges(
+      seqnames = chr_name,
+      ranges = IRanges::IRanges(start = five_utr$start, end = five_utr$stop),
+      strand = gene_strand,
+      feature = "5' UTR"
+    )
+    utr_ranges <- c(utr_ranges, five_utr_ranges)
+  }
+  
+  if (nrow(three_utr) > 0) {
+    three_utr_ranges <- GenomicRanges::GRanges(
+      seqnames = chr_name,
+      ranges = IRanges::IRanges(start = three_utr$start, end = three_utr$stop),
+      strand = gene_strand,
+      feature = "3' UTR"
+    )
+    utr_ranges <- c(utr_ranges, three_utr_ranges)
+  }
+  
+  # Create T-DNA insertion GRanges, if any
+  insertion_ranges <- GenomicRanges::GRanges()
+  if (length(tdna_lines) > 0) {
+    # Get insertion positions
+    regex_pattern <- paste0("\\b(", paste(tdna_lines, collapse = "|"), ")\\b")
+    matches <- grep(regex_pattern, location$V1)
+    
+    if (length(matches) > 0) {
+      locations <- location[matches]
+      locations <- locations[, c("V1", "pos"), with = FALSE]
+      locations <- unique(locations)
+      
+      # Filter for positions in the gene range
+      locations <- locations[pos >= gene_start & pos <= gene_end]
+      
+      # Build GRanges for each insertion
+      if (nrow(locations) > 0) {
+        insertion_ranges <- GenomicRanges::GRanges(
+          seqnames = chr_name,
+          ranges = IRanges::IRanges(start = locations$pos, width = 1),
+          strand = gene_strand,
+          id = locations$V1
+        )
+      }
+    }
+  }
+  
+  # Create Gviz tracks
+  # Genome axis track
+  gat <- NULL
+  if (show_axis) {
+    gat <- Gviz::GenomeAxisTrack(
+      range = gene_range,
+      showTitle = FALSE,
+      labelPos = "below"
+    )
+  }
+  
+  # Chromosome context track
+  ict <- NULL
+  if (show_chromosome_context) {
+    tryCatch({
+      ict <- Gviz::IdeogramTrack(
+        genome = "tair10",
+        chromosome = chr_name,
+        showTitle = FALSE
+      )
+    }, error = function(e) {
+      message("Could not create chromosome context. Using simplified version.")
+      ict <- NULL
+    })
+  }
+  
+  # Gene region track
+  grt <- Gviz::GeneRegionTrack(
+    range = c(exon_ranges, utr_ranges),
+    genome = "tair10",
+    chromosome = chr_name,
+    name = gene,
+    transcriptAnnotation = "symbol",
+    background.title = "transparent",
+    col = NA,
+    fill = c(rep(colors["exon"], length(exon_ranges)), 
+             rep(colors["utr"], length(utr_ranges))),
+    shape = c(rep("box", length(exon_ranges)), 
+              rep("arrow", length(utr_ranges))),
+    showTitle = TRUE
+  )
+  
+  # Annotation track for gene
+  gene_atrack <- Gviz::AnnotationTrack(
+    range = gene_range,
+    genome = "tair10",
+    chromosome = chr_name,
+    name = "Gene",
+    fill = "transparent",
+    col = "black",
+    shape = "box",
+    showTitle = FALSE
+  )
+  
+  # T-DNA insertion track
+  if (length(insertion_ranges) > 0) {
+    highlight_track <- Gviz::AnnotationTrack(
+      range = insertion_ranges,
+      genome = "tair10",
+      chromosome = chr_name,
+      name = "T-DNA Insertions",
+      fill = colors["insertion"],
+      col = colors["insertion"],
+      shape = "box",
+      showId = TRUE,
+      id = insertion_ranges$id,
+      fontcolor.item = "black",
+      background.title = colors["insertion"],
+      col.title = "white",
+      cex.title = 0.8,
+      showTitle = TRUE
+    )
+    
+    # Create plot with all tracks
+    track_list <- list()
+    
+    if (!is.null(ict)) {
+      track_list <- c(track_list, list(ict))
+    }
+    
+    if (!is.null(gat)) {
+      track_list <- c(track_list, list(gat))
+    }
+    
+    track_list <- c(track_list, list(gene_atrack, grt, highlight_track))
+    
+    plot_title <- paste0(gene, " with T-DNA insertions")
+    Gviz::plotTracks(
+      track_list,
+      from = plot_start,
+      to = plot_end,
+      showTitle = TRUE,
+      main = plot_title,
+      cex.main = 1.2,
+      background.title = "white"
+    )
+  } else {
+    # Create plot without insertion track
+    track_list <- list()
+    
+    if (!is.null(ict)) {
+      track_list <- c(track_list, list(ict))
+    }
+    
+    if (!is.null(gat)) {
+      track_list <- c(track_list, list(gat))
+    }
+    
+    track_list <- c(track_list, list(gene_atrack, grt))
+    
+    plot_title <- paste0(gene, " (No T-DNA insertions found)")
+    Gviz::plotTracks(
+      track_list,
+      from = plot_start,
+      to = plot_end,
+      showTitle = TRUE,
+      main = plot_title,
+      cex.main = 1.2,
+      background.title = "white"
+    )
+  }
+  
+  # Return invisibly
+  invisible(list(
+    gene = gene,
+    chromosome = chr_name,
+    start = gene_start,
+    end = gene_end,
+    strand = gene_strand,
+    insertions = if (length(insertion_ranges) > 0) data.frame(
+      line = insertion_ranges$id,
+      position = as.numeric(GenomicRanges::start(insertion_ranges))
+    ) else NULL
+  ))
 }
 
-#' Legacy version of the plotting function using ggbio
+#' Legacy version of the plotting function 
 #'
 #' @param gene A character string specifying the Arabidopsis gene ID
-#' @import ggplot2
-#' @import ggrepel
+#' @param show_introns Whether to show introns
+#' @param show_all_features Whether to show all features
+#' @param interactive Whether to create an interactive plot
 #' @keywords internal
-plotTDNAlines_ggbio <- function(gene) {
+plotTDNAlines_old <- function(gene, show_introns = TRUE, show_all_features = FALSE, interactive = TRUE) {
   .Deprecated("plotTDNAlines")
-  plotTDNAlines(gene, interactive = FALSE)
+  plotTDNAlines(gene)
 }

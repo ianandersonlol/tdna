@@ -2,10 +2,43 @@
 % Please edit documentation in R/plotTDNAlines.R
 \name{plotTDNAlines}
 \alias{plotTDNAlines}
-\title{plot TDNA lines in gene}
+\title{Plot T-DNA insertion lines in a gene with high-quality genomic visualization}
 \usage{
-plotTDNAlines(gene)
+plotTDNAlines(
+  gene,
+  show_axis = TRUE,
+  show_chromosome_context = TRUE,
+  colorblind_friendly = TRUE,
+  use_base_r = FALSE
+)
+}
+\arguments{
+\item{gene}{A character string specifying the Arabidopsis gene ID (e.g. "AT1G25320")}
+
+\item{show_axis}{Logical indicating whether to display the genomic axis. Default is TRUE.}
+
+\item{show_chromosome_context}{Logical indicating whether to show chromosome context. Default is TRUE.}
+
+\item{colorblind_friendly}{Logical indicating whether to use a colorblind-friendly palette. Default is TRUE.}
+
+\item{use_base_r}{Logical indicating whether to use base R functions if encountering issues. Default is FALSE.}
+}
+\value{
+A Gviz track plot object
 }
 \description{
-plot TDNA lines in gene
+Creates a publication-quality visualization of T-DNA insertion locations within
+a gene structure. The visualization shows exons, introns, UTRs, and marks
+T-DNA insertion points clearly. The style is similar to genome browsers
+like Ensembl with a clean, professional appearance.
+}
+\examples{
+# Load the data first
+loadTDNAdata()
+
+# Plot gene with T-DNA insertions
+plotTDNAlines("AT1G25320")
+
+# Plot a gene without known insertions
+plotTDNAlines("AT1G20330")
 }
