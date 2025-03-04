@@ -13,11 +13,20 @@ The `tdna` package provides tools to:
 ## Installation
 
 ```r
-# Install from GitHub
-if (!requireNamespace("devtools", quietly = TRUE))
-  install.packages("devtools")
+# Install required dependencies
+required_packages <- c("devtools", "data.table", "R.utils")
+new_packages <- required_packages[!required_packages %in% installed.packages()[,"Package"]]
+if(length(new_packages)) install.packages(new_packages)
+
+# Install BioConductor dependencies
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+bioc_packages <- c("GenomicRanges", "IRanges", "Gviz")
+BiocManager::install(bioc_packages)
+
+# Install tdna from GitHub
 devtools::install_github("ianandersonlol/tdna")
 
+# Load the package
 library(tdna)
 ```
 
@@ -28,7 +37,11 @@ library(tdna)
 First, load the necessary T-DNA datasets:
 
 ```r
+# Standard data loading
 loadTDNAdata()
+
+# If experiencing data loading issues, use base R methods
+loadTDNAdata(force = TRUE, use_base_r = TRUE)
 ```
 
 ### Find T-DNA insertion lines for a gene
@@ -50,6 +63,9 @@ plotTDNAlines("AT1G25320", show_chromosome_context = TRUE)
 
 # Customize with a standard color scheme
 plotTDNAlines("AT1G25320", colorblind_friendly = FALSE)
+
+# If experiencing issues with visualization
+plotTDNAlines("AT1G25320", use_base_r = TRUE)
 ```
 
 ### Example of gene without available T-DNA lines
@@ -64,7 +80,7 @@ plotTDNAlines("AT1G20330")
 
 ## Visualization Features
 
-The new Gviz-based visualization provides:
+The Gviz-based visualization provides:
 
 - Publication-quality gene model visualization similar to genome browsers
 - Proper representation of introns, exons, UTRs, and gene structure
@@ -72,6 +88,25 @@ The new Gviz-based visualization provides:
 - Chromosome context and genomic coordinates
 - Colorblind-friendly color scheme by default
 - Interactive tooltips when viewing in R (hover over features for details)
+
+## Troubleshooting
+
+If you encounter a "lazy-load database is corrupt" error:
+
+```r
+# Fix database corruption by reinstalling the package
+fixTDNAcorruption()
+
+# After fixing, reload the data and continue
+loadTDNAdata()
+```
+
+For other issues:
+
+```r
+# Use base R methods instead of data.table
+loadTDNAdata(force = TRUE, use_base_r = TRUE)
+```
 
 ## Data Sources
 

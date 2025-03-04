@@ -22,10 +22,7 @@
 # Global variables
 utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "location", "pos"))
 getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_UTR")) {
-  # Check if data is loaded
-  if (!exists("confirmed__exon_hom_sent", envir = .GlobalEnv)) {
-    stop("T-DNA data not loaded. Please run loadTDNAdata() first.")
-  }
+  verify_tdna_data()
   
   # Validate input
   if (!is.character(gene) || length(gene) != 1) {

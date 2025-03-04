@@ -20,6 +20,8 @@
 #' 
 #' # Plot a gene without known insertions
 #' plotTDNAlines("AT1G20330")
+#' # If experiencing issues, try with base R:
+#' plotTDNAlines("AT1G25320", use_base_r = TRUE)
 #' @import data.table
 #' @importFrom GenomicRanges GRanges 
 #' @importFrom IRanges IRanges
@@ -32,6 +34,22 @@
 utils::globalVariables(c("gff", "location", "pos"))
 plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE,
                          colorblind_friendly = TRUE, use_base_r = FALSE) {
+  # Verify data is loaded
+  verify_tdna_data()
+  
+  # Handle potential data access issues
+  tryCatch({
+    if (exists("gff", envir = .GlobalEnv)) {
+      # Test if we can access the object
+      temp <- gff[1,1]
+    }
+  }, error = function(e) {
+    if (grepl("corrupt", e$message)) {
+      message("Detected corrupt database, attempting reload...")
+      loadTDNAdata(force = TRUE, use_base_r = TRUE)
+    }
+  })
+  
   # Ensure required packages are installed
   required_pkgs <- c("Gviz", "GenomicRanges", "IRanges")
   for (pkg in required_pkgs) {
@@ -42,9 +60,6 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
       BiocManager::install(pkg)
     }
   }
-  
-  # Verify data is loaded
-  verify_tdna_data()
   
   # Convert gene ID to uppercase
   gene <- toupper(gene)

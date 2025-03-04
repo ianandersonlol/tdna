@@ -10,6 +10,8 @@
 #' @return Invisibly returns TRUE if data was loaded successfully
 #' @examples
 #' loadTDNAdata()
+#' # If experiencing issues with data loading:
+#' loadTDNAdata(force = TRUE, use_base_r = TRUE)
 #' @import data.table
 #' @importFrom utils install.packages read.delim remove.packages
 #' @export
@@ -17,7 +19,33 @@
 # Global variables
 utils::globalVariables(c("confirmed", "gff", "location"))
 loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
-  # Handle existing data
+  # Handle lazy loading corruption
+  tryCatch({
+    if (exists("gff", envir = .GlobalEnv)) {
+      # Test if we can access the object
+      temp <- gff[1,1]
+    }
+    if (exists("confirmed", envir = .GlobalEnv)) {
+      temp <- confirmed[1,1]
+    }
+    if (exists("location", envir = .GlobalEnv)) {
+      temp <- location[1,1]
+    }
+  }, error = function(e) {
+    # If there's an error accessing existing objects, force reload
+    if (grepl("corrupt", e$message)) {
+      message("Detected corrupt database, forcing reload")
+      force <- TRUE
+      
+      # Clean up corrupted objects
+      if (exists("gff", envir = .GlobalEnv)) rm(gff, envir = .GlobalEnv)
+      if (exists("confirmed", envir = .GlobalEnv)) rm(confirmed, envir = .GlobalEnv)
+      if (exists("confirmed__exon_hom_sent", envir = .GlobalEnv)) rm(confirmed__exon_hom_sent, envir = .GlobalEnv)
+      if (exists("location", envir = .GlobalEnv)) rm(location, envir = .GlobalEnv)
+      if (exists("sequence_data", envir = .GlobalEnv)) rm(sequence_data, envir = .GlobalEnv)
+    }
+  })
+  
   if (!force && exists("gff", envir = .GlobalEnv) && 
       exists("confirmed", envir = .GlobalEnv) && 
       exists("location", envir = .GlobalEnv)) {
@@ -25,7 +53,6 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
     return(invisible(TRUE))
   }
   
-  # Check for required packages
   if (!use_base_r && !requireNamespace("data.table", quietly = TRUE)) {
     warning("data.table not found. Falling back to base R.")
     use_base_r <- TRUE
@@ -42,7 +69,7 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
     install.packages("BiocManager", repos = "https://cran.rstudio.com/")
   }
   
-  required_bioc <- c("GenomicRanges", "IRanges", "GenomicFeatures", "rtracklayer", "Gviz")
+  required_bioc <- c("GenomicRanges", "IRanges", "Gviz")
   missing_bioc <- required_bioc[!sapply(required_bioc, requireNamespace, quietly = TRUE)]
   
   if (length(missing_bioc) > 0) {
@@ -52,7 +79,6 @@ loadTDNAdata <- function(force = FALSE, use_base_r = FALSE) {
   
   message("Loading T-DNA datasets. This may take a moment...")
   
-  # Helper function to read files safely
   safe_read <- function(file_path, header = TRUE, is_gff = FALSE) {
     if (!file.exists(file_path)) {
       stop("File not found: ", file_path)
@@ -226,41 +252,18 @@ verify_tdna_data <- function() {
     loadTDNAdata(force = TRUE, use_base_r = TRUE)
   }
   
-  invisible(TRUE)
-}
-
-#' Fix package corruption issues
-#'
-#' This function reinstalls the package to fix corruption issues.
-#'
-#' @param repo Repository path for reinstallation. Default: "ianandersonlol/tdna".
-#' @return TRUE if successful
-#' @export
-fixTDNAcorruption <- function(repo = "ianandersonlol/tdna") {
-  if (!requireNamespace("devtools", quietly = TRUE)) {
-    message("Installing devtools package...")
-    install.packages("devtools")
-  }
-  
-  # Try to unload the package
+  valid <- TRUE
   tryCatch({
-    detach("package:tdna", unload = TRUE)
+    if (!"data.frame" %in% class(gff) || nrow(gff) < 10) valid <- FALSE
+    if (!"data.frame" %in% class(confirmed) || nrow(confirmed) < 10) valid <- FALSE
+    if (!"data.frame" %in% class(location) || nrow(location) < 10) valid <- FALSE
   }, error = function(e) {
-    # Package wasn't loaded, that's fine
+    valid <- FALSE
   })
   
-  # Remove the package
-  message("Removing corrupt package installation...")
-  remove.packages("tdna")
+  if (!valid) {
+    loadTDNAdata(force = TRUE, use_base_r = TRUE)
+  }
   
-  # Reinstall from source
-  message("Reinstalling tdna package from source...")
-  devtools::install_github(repo, force = TRUE)
-  
-  # Load the package
-  message("Loading newly installed package...")
-  library(tdna)
-  
-  message("Package reinstalled. Please run loadTDNAdata() to load the data.")
   invisible(TRUE)
 }
