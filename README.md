@@ -32,7 +32,11 @@ library(tdna)
 First, load the necessary T-DNA datasets:
 
 ```r
+# Standard data loading
 loadTDNAdata()
+
+# If experiencing data loading issues, use base R methods
+loadTDNAdata(force = TRUE, use_base_r = TRUE)
 ```
 
 ### Find T-DNA insertion lines for a gene
@@ -54,6 +58,9 @@ plotTDNAlines("AT1G25320", interactive = FALSE)
 
 # Show all genomic features including introns
 plotTDNAlines("AT1G25320", show_all_features = TRUE)
+
+# If experiencing issues with visualization
+plotTDNAlines("AT1G25320", use_base_r = TRUE)
 ```
 
 ### Example of gene without available T-DNA lines
@@ -74,6 +81,15 @@ The interactive visualization (powered by plotly) provides:
 - Information about T-DNA insertion lines including homozygosity status
 - Ability to zoom, pan, and export the visualization
 - Clear indication of gene structure with exons, UTRs, and direction
+
+## Troubleshooting
+
+If you encounter issues with the package, try these options:
+
+1. **Data loading issues**: Use `loadTDNAdata(force = TRUE, use_base_r = TRUE)` to reload data using base R methods
+2. **Database corruption**: Reinstall the package with `devtools::install_github("ianandersonlol/tdna")`
+3. **Visualization issues**: Use `plotTDNAlines(..., interactive = FALSE)` to create static plots
+4. **Memory issues with large genes**: Use `plotTDNAlines(..., show_introns = FALSE)` to display less detail
 
 ## Data Sources
 
