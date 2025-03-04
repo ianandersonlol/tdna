@@ -20,7 +20,7 @@
 #' 
 #' @importFrom utils globalVariables
 # Global variables
-utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "location", "pos"))
+utils::globalVariables(c("confirmed__exon_hom_sent", "Target Gene", "gff", "type", "V3", "location", "pos"))
 getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_UTR")) {
   verify_tdna_data()
   
@@ -42,7 +42,17 @@ getTDNAlines <- function(gene, region = c("CDS", "five_prime_UTR", "three_prime_
   }
   
   # Get gene features from GFF
-  genegff <- gff[grep(paste0("ID=", gene), gff$info)]
+  if ("info" %in% names(gff)) {
+    # Using named columns
+    genegff <- gff[grep(paste0("ID=", gene), gff$info, ignore.case = TRUE), ]
+  } else if ("V9" %in% names(gff)) {
+    # Using V9 for info column (standard GFF format)
+    genegff <- gff[grep(paste0("ID=", gene), gff$V9, ignore.case = TRUE), ]
+  } else {
+    # If neither format is found
+    warning("GFF data format not recognized")
+    return(character(0))
+  }
   
   # Ensure type column is available (it may be named differently in some data.frame types)
   if (!"type" %in% names(genegff) && "V3" %in% names(genegff)) {

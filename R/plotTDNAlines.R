@@ -31,7 +31,7 @@
 #' @note This function relies on global variables loaded by loadTDNAdata()
 #' @importFrom utils globalVariables
 # Global variables
-utils::globalVariables(c("gff", "location", "pos"))
+utils::globalVariables(c("gff", "location", "pos", "V3", "V9"))
 plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE,
                          colorblind_friendly = TRUE, use_base_r = FALSE) {
   # Verify data is loaded
@@ -73,7 +73,17 @@ plotTDNAlines <- function(gene, show_axis = TRUE, show_chromosome_context = TRUE
   })
   
   # Get gene features from GFF
-  gene_records <- gff[grep(paste0("ID=", gene, ";"), gff$info), ]
+  if ("info" %in% names(gff)) {
+    # Using named columns
+    gene_records <- gff[grep(paste0("ID=", gene), gff$info, ignore.case = TRUE), ]
+  } else if ("V9" %in% names(gff)) {
+    # Using V9 for info column (standard GFF format)
+    gene_records <- gff[grep(paste0("ID=", gene), gff$V9, ignore.case = TRUE), ]
+  } else {
+    # If neither format is found
+    message("GFF data format not recognized")
+    return(NULL)
+  }
   
   if (nrow(gene_records) == 0) {
     message(paste("No gene features found for", gene))
