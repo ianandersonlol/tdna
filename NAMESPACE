@@ -3,6 +3,8 @@
 export(getTDNAlines)
 export(loadTDNAdata)
 export(plotTDNAlines)
+export(fixTDNAcorruption)
 import(data.table)
 import(ggplot2)
 import(ggrepel)
+importFrom(plotly, ggplotly, layout, config)
