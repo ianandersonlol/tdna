@@ -1,10 +1,26 @@
+# R package specific
 .Rproj.user/*
 .Rhistory
 .RData
 .Ruserdata
 R/rutter.R
-.DS_store
 .Rbuildignore
 tdna.Rproj
 .Rproj.user
 CLAUDE.md
+
+# Web application specific
+web/node_modules/
+web/server/node_modules/
+web/client/node_modules/
+web/data_import/node_modules/
+web/client/build/
+web/server/.env
+
+# Common
+.DS_Store
+Rplots.pdf
+*.log
+*.swp
+*~
+.vscode/

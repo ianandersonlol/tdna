@@ -1,6 +1,6 @@
 # tdna
 
-An R package for visualizing and analyzing T-DNA insertion lines in Arabidopsis thaliana genes.
+A toolkit for visualizing and analyzing T-DNA insertion lines in Arabidopsis thaliana genes, available both as an R package and a modern web application.
 
 ## Overview
 
@@ -123,6 +123,21 @@ If you use this package in your research, please cite:
 ```
 Anderson, I.C., Monroe, G.R. (2023). tdna: Tools for Visualizing and Analyzing T-DNA Insertion Lines in Arabidopsis. https://github.com/ianandersonlol/tdna
 ```
+
+## Web Application
+
+A modern web-based implementation is now available for those who prefer not to use R. The web application provides an interactive genome browser with improved visualization capabilities.
+
+### Features
+
+- Interactive gene visualization using IGV.js genome browser
+- User-friendly search interface
+- Detailed T-DNA line information with export options
+- Responsive design for desktop and mobile access
+
+### Getting Started
+
+See the [web application documentation](web/README.md) for installation and usage instructions.
 
 ## License
 

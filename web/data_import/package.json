@@ -1,0 +1,15 @@
+{
+  "name": "tdna-data-import",
+  "version": "1.0.0",
+  "description": "Data import scripts for T-DNA visualization web application",
+  "main": "index.js",
+  "scripts": {
+    "import-all": "node import-all.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "pg": "^8.9.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.28.0"
+  }
+}
