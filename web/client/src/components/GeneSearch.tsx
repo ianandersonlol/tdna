@@ -60,6 +60,13 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
   // Handle form submission
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    submitSearch();
+  };
+  
+  // Actual search logic extracted into a separate function
+  const submitSearch = () => {
+    console.log("Search submitted", { selectedGene, searchTerm });
+    
     if (selectedGene) {
       onGeneSelect(selectedGene.gene_id);
     } else if (searchTerm && searchTerm.match(/^AT[1-5]G\d+$/i)) {
@@ -112,11 +119,11 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
         />
         
         <Button 
-          type="submit" 
+          type="button" 
           variant="contained" 
           color="primary"
           disabled={loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))}
-          onClick={handleSubmit}
+          onClick={submitSearch}
         >
           Search T-DNA Lines
         </Button>
