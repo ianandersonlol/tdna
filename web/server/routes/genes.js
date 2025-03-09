@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { Gene, GeneFeature } = require('../models');
+const sequelize = require('../config/database');
 const { Op } = require('sequelize');
 
 // Get a gene by ID
@@ -31,13 +32,46 @@ router.get('/:geneId', async (req, res) => {
 router.get('/search/:query', async (req, res) => {
   try {
     const { query } = req.params;
+    
+    // If query is empty or too short, return some default genes
+    if (!query || query.length < 2) {
+      const defaultGenes = await Gene.findAll({
+        where: {
+          gene_id: {
+            [Op.iLike]: 'AT1G%'
+          }
+        },
+        limit: 10
+      });
+      return res.json(defaultGenes);
+    }
+    
+    // Search by gene_id or description
     const genes = await Gene.findAll({
       where: {
-        gene_id: {
-          [Op.iLike]: `%${query}%`
-        }
+        [Op.or]: [
+          {
+            gene_id: {
+              [Op.iLike]: `%${query}%`
+            }
+          },
+          {
+            description: {
+              [Op.iLike]: `%${query}%`
+            }
+          }
+        ]
       },
-      limit: 10
+      order: [
+        // Prioritize exact matches at the beginning
+        [sequelize.literal(`CASE 
+          WHEN gene_id ILIKE '${query}%' THEN 1 
+          WHEN gene_id ILIKE '%${query}%' THEN 2
+          ELSE 3 
+        END`), 'ASC'],
+        ['gene_id', 'ASC']
+      ],
+      limit: 15
     });
 
     res.json(genes);
