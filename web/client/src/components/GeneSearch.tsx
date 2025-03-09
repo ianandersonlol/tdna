@@ -116,6 +116,7 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
           variant="contained" 
           color="primary"
           disabled={loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))}
+          onClick={handleSubmit}
         >
           Search T-DNA Lines
         </Button>
