@@ -56,6 +56,24 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
       clearTimeout(timer);
     };
   }, [searchTerm]);
+  
+  // Load initial suggestions when component mounts
+  useEffect(() => {
+    const loadInitialSuggestions = async () => {
+      setLoading(true);
+      try {
+        // Load some initial suggestions with a common prefix
+        const results = await searchGenes('AT1G');
+        setOptions(results);
+      } catch (error) {
+        console.error('Error loading initial suggestions:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadInitialSuggestions();
+  }, []);
 
   // Function to perform the search
   const performSearch = () => {
@@ -91,7 +109,8 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
           id="gene-search"
           options={options}
           getOptionLabel={(option) => `${option.gene_id} (${option.description.substring(0, 30)}...)`}
-          filterOptions={(x) => x} // Disable client-side filtering
+          filterOptions={(x) => x} // Server-side filtering is used instead
+          open={options.length > 0 || loading} // Keep dropdown open when options exist or loading
           loading={loading}
           loadingText="Searching genes..."
           noOptionsText={noResults ? "No genes found" : "Type to search"}
@@ -116,6 +135,10 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
           value={selectedGene}
           onChange={(_, newValue) => {
             setSelectedGene(newValue);
+            if (newValue) {
+              // If a selection is made from dropdown, trigger search immediately
+              setTimeout(() => onGeneSelect(newValue.gene_id), 0);
+            }
           }}
           inputValue={searchTerm}
           onInputChange={(_, newInputValue) => {
@@ -127,10 +150,13 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
               performSearch();
             }
           }}
+          autoComplete
+          autoHighlight
+          disablePortal={false}
         />
         
         <Button 
-          type="button" 
+          type="submit" 
           variant="contained" 
           color="primary"
           disabled={loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))}
