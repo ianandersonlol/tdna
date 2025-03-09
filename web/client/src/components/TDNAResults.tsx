@@ -87,7 +87,7 @@ const TDNAResults: React.FC<TDNAResultsProps> = ({ geneId, tdnaLines, isLoading 
           T-DNA Lines for {geneId}
         </Typography>
         <Typography variant="body1" align="center" sx={{ my: 4 }}>
-          No T-DNA insertion lines found for this gene
+          No T-DNA insertion lines found for this locus
         </Typography>
       </Paper>
     );
