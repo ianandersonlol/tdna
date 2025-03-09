@@ -1,0 +1,28 @@
+{
+  "name": "tdna-web",
+  "version": "1.0.0",
+  "description": "Interactive web application for visualizing T-DNA insertion lines in Arabidopsis thaliana genes",
+  "scripts": {
+    "setup": "npm run setup:server && npm run setup:client && npm run setup:import",
+    "setup:server": "cd server && npm install",
+    "setup:client": "cd client && npm install",
+    "setup:import": "cd data_import && npm install",
+    "import-data": "cd data_import && npm run import-all",
+    "start:server": "cd server && npm start",
+    "start:client": "cd client && npm start",
+    "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
+    "build": "cd client && npm run build"
+  },
+  "keywords": [
+    "arabidopsis",
+    "tdna",
+    "genomics",
+    "visualization",
+    "biology"
+  ],
+  "author": "Ian Anderson",
+  "license": "MIT",
+  "dependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
