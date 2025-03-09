@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Typography, Switch, FormControlLabel, Divider, Paper } from '@mui/material';
+import { Container, Box, Typography, Switch, FormControlLabel, Divider } from '@mui/material';
 import GeneSearch from '../components/GeneSearch';
 import TDNAResults from '../components/TDNAResults';
 import GenomeBrowser from '../components/GenomeBrowser';

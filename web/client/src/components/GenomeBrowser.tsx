@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import * as igv from 'igv';
+import igv from 'igv';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { VisualizationData } from '../types';
 
@@ -100,7 +100,7 @@ const GenomeBrowser: React.FC<GenomeBrowserProps> = ({
 
       try {
         // Initialize IGV browser
-        igvBrowser.current = await igv.createBrowser(igvContainer.current, {
+        igvBrowser.current = await igv.browser.createBrowser(igvContainer.current, {
           genome: genome,
           locus: `${visualizationData.gene.chromosome}:${visualizationData.gene.start - 100}-${visualizationData.gene.end + 100}`,
           tracks: []
