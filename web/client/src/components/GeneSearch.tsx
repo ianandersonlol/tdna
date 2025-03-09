@@ -79,15 +79,18 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
   const performSearch = () => {
     // Don't do anything if button would be disabled
     if (loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))) {
+      console.log("Search blocked due to validation", { loading, selectedGene, searchTerm });
       return;
     }
     
     console.log("Search performed", { selectedGene, searchTerm });
     
     if (selectedGene) {
+      console.log("Searching with selected gene:", selectedGene.gene_id);
       onGeneSelect(selectedGene.gene_id);
     } else if (searchTerm && searchTerm.match(/^AT[1-5]G\d+$/i)) {
       // If input matches Arabidopsis gene ID pattern, treat as a direct gene ID search
+      console.log("Searching with direct gene ID:", searchTerm.toUpperCase());
       onGeneSelect(searchTerm.toUpperCase());
     }
   };
@@ -104,7 +107,13 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
         Search for Arabidopsis T-DNA Lines
       </Typography>
       
-      <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+      <Box 
+        component="form" 
+        onSubmit={handleSubmit} 
+        sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}
+        noValidate
+        autoComplete="off"
+      >
         <Autocomplete
           id="gene-search"
           options={options}
@@ -134,10 +143,12 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
           )}
           value={selectedGene}
           onChange={(_, newValue) => {
+            console.log("Selection changed:", newValue);
             setSelectedGene(newValue);
             if (newValue) {
+              console.log("Selection made, triggering search with:", newValue.gene_id);
               // If a selection is made from dropdown, trigger search immediately
-              setTimeout(() => onGeneSelect(newValue.gene_id), 0);
+              onGeneSelect(newValue.gene_id);
             }
           }}
           inputValue={searchTerm}
@@ -156,12 +167,12 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
         />
         
         <Button 
-          type="submit" 
+          type="button" 
           variant="contained" 
           color="primary"
           disabled={loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))}
-          onClick={(e) => {
-            e.preventDefault(); // Prevent any default behavior
+          onClick={() => {
+            console.log("Search button clicked");
             performSearch();
           }}
         >
