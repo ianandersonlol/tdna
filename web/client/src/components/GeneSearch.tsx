@@ -57,15 +57,27 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
     };
   }, [searchTerm]);
 
-  // Handle form submission
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
+  // Function to perform the search
+  const performSearch = () => {
+    // Don't do anything if button would be disabled
+    if (loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))) {
+      return;
+    }
+    
+    console.log("Search performed", { selectedGene, searchTerm });
+    
     if (selectedGene) {
       onGeneSelect(selectedGene.gene_id);
     } else if (searchTerm && searchTerm.match(/^AT[1-5]G\d+$/i)) {
       // If input matches Arabidopsis gene ID pattern, treat as a direct gene ID search
       onGeneSelect(searchTerm.toUpperCase());
     }
+  };
+  
+  // Handle form submission
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    performSearch();
   };
 
   return (
@@ -109,14 +121,23 @@ const GeneSearch: React.FC<GeneSearchProps> = ({ onGeneSelect, initialGeneId }) 
           onInputChange={(_, newInputValue) => {
             setSearchTerm(newInputValue);
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              performSearch();
+            }
+          }}
         />
         
         <Button 
-          type="submit" 
+          type="button" 
           variant="contained" 
           color="primary"
           disabled={loading || (!selectedGene && !searchTerm.match(/^AT[1-5]G\d+$/i))}
-          onClick={handleSubmit}
+          onClick={(e) => {
+            e.preventDefault(); // Prevent any default behavior
+            performSearch();
+          }}
         >
           Search T-DNA Lines
         </Button>

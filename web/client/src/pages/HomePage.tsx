@@ -58,6 +58,7 @@ const HomePage: React.FC = () => {
   
   // Handle gene selection
   const handleGeneSelect = (geneId: string) => {
+    console.log("Gene selected in HomePage:", geneId);
     setSelectedGeneId(geneId);
   };
   
