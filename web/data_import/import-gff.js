@@ -1,5 +1,5 @@
 const fs = require('fs');
-const zlib = require('zlib');
+const zlib = require('node:zlib'); // Use built-in Node.js zlib module
 const readline = require('readline');
 const { Sequelize, DataTypes } = require('sequelize');
 require('dotenv').config({ path: '../server/.env' });
