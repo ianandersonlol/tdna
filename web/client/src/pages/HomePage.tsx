@@ -92,6 +92,19 @@ const HomePage: React.FC = () => {
             
             <Box mb={4}>
               <Typography variant="h6" gutterBottom>
+                T-DNA Insertion Lines
+              </Typography>
+              <TDNAResults 
+                geneId={selectedGeneId} 
+                tdnaLines={tdnaLines} 
+                isLoading={loadingTdnaLines} 
+              />
+            </Box>
+            
+            <Divider sx={{ my: 4 }} />
+            
+            <Box mb={4}>
+              <Typography variant="h6" gutterBottom>
                 Gene Visualization
               </Typography>
               <GenomeBrowser 
@@ -100,14 +113,6 @@ const HomePage: React.FC = () => {
                 colorblindFriendly={colorblindFriendly}
               />
             </Box>
-            
-            <Divider sx={{ my: 4 }} />
-            
-            <TDNAResults 
-              geneId={selectedGeneId} 
-              tdnaLines={tdnaLines} 
-              isLoading={loadingTdnaLines} 
-            />
           </>
         )}
       </Box>
