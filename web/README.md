@@ -66,11 +66,25 @@ npm run import-data
 5. **Start the application**
 
 ```bash
-# Start both backend and frontend servers
+# Start both backend and frontend servers concurrently
+cd web
+npm start
+
+# Or start them separately:
+# Start the backend server in development mode
+cd web/server
+npm run dev
+
+# Start the backend server in production mode
+cd web/server
+npm start
+
+# Start the frontend development server
+cd web/client
 npm start
 ```
 
-The application will be available at http://localhost:3000.
+The full application will be available at http://localhost:3000 (frontend) and http://localhost:3001 (backend API).
 
 ## Technical Overview
 
@@ -93,7 +107,7 @@ The application can be deployed to any environment supporting Node.js and Postgr
 
 ```bash
 # Build production-ready frontend
-cd client
+cd web/client
 npm run build
 
 # Start production server
