@@ -4,7 +4,8 @@
   "description": "Data import scripts for T-DNA visualization web application",
   "main": "index.js",
   "scripts": {
-    "import-all": "node import-all.js"
+    "import-all": "node import-all.js",
+    "import-at1g25320": "node import-at1g25320.js"
   },
   "dependencies": {
     "dotenv": "^16.0.3",
