@@ -15,7 +15,7 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "axios": "^1.6.7",
-    "igv": "^2.15.7",
+    "igv": "^2.11.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.1",
@@ -24,7 +24,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "DANGEROUSLY_DISABLE_HOST_CHECK=true react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

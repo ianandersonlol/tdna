@@ -9,7 +9,7 @@
     "setup:import": "cd data_import && npm install",
     "import-data": "cd data_import && npm run import-all",
     "start:server": "cd server && npm start",
-    "start:client": "cd client && npm start",
+    "start:client": "cd client && HOST=localhost npm start",
     "start": "concurrently \"npm run start:server\" \"npm run start:client\"",
     "build": "cd client && npm run build"
   },

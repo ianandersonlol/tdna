@@ -86,11 +86,17 @@ npm start
 
 The full application will be available at http://localhost:3000 (frontend) and http://localhost:5001 (backend API).
 
-> **Note:** If you encounter a webpack error related to allowedHosts when starting the frontend, create a file called `.env.development` in the `web/client` directory with the following content:
-> ```
-> WDS_SOCKET_HOST=localhost
-> FAST_REFRESH=false
-> ```
+> **Note:** If you encounter a webpack error related to allowedHosts when starting the frontend, try one of these solutions:
+>
+> 1. Copy the example environment file:
+>    ```
+>    cp web/client/.env.example web/client/.env
+>    ```
+>
+> 2. Or start the client with host explicitly set:
+>    ```
+>    cd web/client && HOST=localhost npm start
+>    ```
 
 ## Technical Overview
 
