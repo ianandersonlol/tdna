@@ -84,7 +84,13 @@ cd web/client
 npm start
 ```
 
-The full application will be available at http://localhost:3000 (frontend) and http://localhost:3001 (backend API).
+The full application will be available at http://localhost:3000 (frontend) and http://localhost:5001 (backend API).
+
+> **Note:** If you encounter a webpack error related to allowedHosts when starting the frontend, create a file called `.env.development` in the `web/client` directory with the following content:
+> ```
+> WDS_SOCKET_HOST=localhost
+> FAST_REFRESH=false
+> ```
 
 ## Technical Overview
 
