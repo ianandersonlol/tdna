@@ -9,6 +9,8 @@
     "setup:import": "cd data_import && npm install",
     "import-data": "cd data_import && npm run import-all",
     "import-at1g25320": "cd data_import && npm run import-at1g25320",
+    "import-sample-genes": "cd data_import && npm run import-sample-genes",
+    "check-database": "cd data_import && npm run check-database",
     "start:server": "cd server && npm start",
     "start:client": "cd client && HOST=localhost npm start",
     "start": "concurrently \"npm run start:server\" \"npm run start:client\"",

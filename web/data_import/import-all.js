@@ -36,6 +36,13 @@ async function runAllImports() {
     return;
   }
   
+  // Finally import sample genes as a fallback
+  console.log('Importing sample genes as a fallback...');
+  const sampleResult = await runScript('./import-sample-genes.js');
+  if (!sampleResult) {
+    console.error('Sample gene import failed, but continuing...');
+  }
+  
   console.log('All data imports completed successfully');
 }
 

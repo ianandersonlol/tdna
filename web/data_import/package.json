@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "import-all": "node import-all.js",
-    "import-at1g25320": "node import-at1g25320.js"
+    "import-at1g25320": "node import-at1g25320.js",
+    "import-sample-genes": "node import-sample-genes.js",
+    "check-database": "node check-database.js"
   },
   "dependencies": {
     "dotenv": "^16.0.3",
