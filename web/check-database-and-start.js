@@ -74,7 +74,25 @@ async function main() {
     
     // Step 3: Start the server
     console.log('Starting server...');
-    await runCommand('cd', ['server', '&&', 'npm', 'start'], { shell: true });
+    
+    // Use spawn directly to make sure it stays alive
+    const serverProcess = spawn('npm', ['start'], { 
+      cwd: path.join(process.cwd(), 'server'),
+      stdio: 'inherit',
+      shell: true,
+      detached: false
+    });
+    
+    // Keep the script running
+    serverProcess.on('error', (error) => {
+      console.error('Server process error:', error);
+    });
+    
+    // This keeps the main script running while the server runs
+    process.on('SIGINT', () => {
+      serverProcess.kill();
+      process.exit();
+    });
     
   } catch (error) {
     console.error('Error:', error);
