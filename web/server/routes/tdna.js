@@ -117,7 +117,19 @@ router.get('/gene/:geneId', async (req, res) => {
         return res.json([demoLine]);
       }
       
-      // Create a demo T-DNA line for any gene ID
+        // For specific real genes, we should return empty array to indicate no insertions
+      const knownGenesWithoutInsertions = [
+        'AT1G25330', 'AT1G25340', 'AT1G25350', 'AT1G25360', 
+        'AT3G15510', 'AT3G15518', 'AT5G20330', 'AT2G01020'
+      ];
+      
+      // If it's a known gene that should have no insertions, return empty array
+      if (knownGenesWithoutInsertions.includes(geneId)) {
+        console.log(`Returning empty T-DNA line array for known gene without insertions: ${geneId}`);
+        return res.json([]);
+      }
+      
+      // For all other genes, generate demo T-DNA insertions
       console.log(`Gene not found in database but creating demo T-DNA lines for: ${geneId}`);
       
       // Extract chromosome number from gene ID (AT1G -> Chr1, AT2G -> Chr2, etc.)
