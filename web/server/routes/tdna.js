@@ -117,7 +117,34 @@ router.get('/gene/:geneId', async (req, res) => {
         return res.json([demoLine]);
       }
       
-      return res.status(404).json({ message: 'Gene not found' });
+      // Create a demo T-DNA line for any gene ID
+      console.log(`Gene not found in database but creating demo T-DNA lines for: ${geneId}`);
+      
+      // Extract chromosome number from gene ID (AT1G -> Chr1, AT2G -> Chr2, etc.)
+      const chrMatch = geneId.match(/AT(\d)G/i);
+      const chromosome = chrMatch ? `Chr${chrMatch[1]}` : 'Chr1';
+      
+      // Generate position based on gene ID
+      const idNum = geneId.replace(/\D/g, '');
+      const position = idNum.length > 5 ? parseInt(idNum.substring(0, 6)) : 100000 + parseInt(idNum);
+      
+      // Create a demo T-DNA line
+      const demoLine = {
+        line_id: `DEMO_${geneId}`,
+        target_gene: geneId,
+        hit_region: "Exon",
+        homozygosity_status: "HMc",
+        stock_center_status: "Demo",
+        TDNAPositions: [
+          {
+            position_id: 999999,
+            chromosome: chromosome,
+            position: position
+          }
+        ]
+      };
+      
+      return res.json([demoLine]);
     }
     
     console.log(`Gene found: ${gene.gene_id}, now searching for T-DNA lines`);
