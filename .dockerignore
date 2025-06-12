@@ -1,0 +1,11 @@
+# Ignore Git files
+.git
+.gitignore
+# Node modules
+**/node_modules
+# Next build output
+**/.next
+# Test files
+tests
+# R generated files
+*.Rproj
