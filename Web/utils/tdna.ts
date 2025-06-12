@@ -115,13 +115,8 @@ let data: TdnaData | null = null
 export function getData() {
   if (!data) {
     data = new TdnaData()
-    const base = path.join(process.cwd(), 'inst', 'extdata')
-    if (!fs.existsSync(base)) {
-      const alt = path.join(process.cwd(), '..', 'inst', 'extdata')
-      data.load(alt)
-    } else {
-      data.load(base)
-    }
+    const base = path.join(process.cwd(), 'data')
+    data.load(base)
   }
   return data
 }
