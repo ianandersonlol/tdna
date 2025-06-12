@@ -12,6 +12,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "@jbrowse/react-linear-genome-view": "2.18.0",
+    "react-draggable": "^4.4.6",
     "clsx": "^1.2.1",
     "tailwind-merge": "^1.14.0",
     "class-variance-authority": "^0.7.0"
