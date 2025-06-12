@@ -1,13 +1,15 @@
 Package: tdna
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Query and Plot Arabidopsis T-DNA Insertions
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Authors@R: c(person(given = "Grey", family = "Monroe", role = c("aut", "cre"),
+               email = "yourself@somewhere.net"))
+Description: Provides helper functions to look up and visualise confirmed
+    homozygous T-DNA insertion lines within Arabidopsis genes. The package
+    ships with annotation tables from public resources and allows users to
+    query and plot insertions for a given gene.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: data.table
+Imports: data.table, ggplot2, ggrepel
 RoxygenNote: 6.1.1

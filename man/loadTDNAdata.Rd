@@ -2,10 +2,13 @@
 % Please edit documentation in R/loadTDNAdata.R
 \name{loadTDNAdata}
 \alias{loadTDNAdata}
-\title{load data for TDNA stuff}
+\title{Load bundled T-DNA annotation tables}
 \usage{
 loadTDNAdata()
 }
+\value{
+Invisibly returns a list with the loaded tables.
+}
 \description{
-load data for TDNA stuff
+Reads the packaged annotation files and stores them in an internal environment so that other functions can access them.
 }
