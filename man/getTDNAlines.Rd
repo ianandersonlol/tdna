@@ -2,13 +2,17 @@
 % Please edit documentation in R/getTDNAlines.R
 \name{getTDNAlines}
 \alias{getTDNAlines}
-\title{return TDNA lines that are found in gene of interest}
+\title{Return T-DNA lines found in a gene}
 \usage{
-getTDNAlines(gene)
+getTDNAlines(gene, data_env = .tdna_env)
 }
 \arguments{
-\item{gene}{A number.}
+\item{gene}{Gene identifier (e.g. "AT1G25320").}
+\item{data_env}{Environment with the loaded data.}
+}
+\value{
+Character vector of T-DNA line identifiers.
 }
 \description{
-return TDNA lines that are found in gene of interest
+Return the names of confirmed homozygous T-DNA lines that fall within the coding sequence of the given gene.
 }

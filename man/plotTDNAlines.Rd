@@ -2,10 +2,14 @@
 % Please edit documentation in R/plotTDNAlines.R
 \name{plotTDNAlines}
 \alias{plotTDNAlines}
-\title{plot TDNA lines in gene}
+\title{Plot T-DNA insertions in a gene}
 \usage{
-plotTDNAlines(gene)
+plotTDNAlines(gene, data_env = .tdna_env)
+}
+\arguments{
+\item{gene}{Gene identifier.}
+\item{data_env}{Environment with the loaded data.}
 }
 \description{
-plot TDNA lines in gene
+Create a simple plot showing the gene's coding sequence segments and labels for confirmed homozygous T-DNA insertions.
 }
