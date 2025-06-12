@@ -1,6 +1,6 @@
 'use client'
 
-import { LinearGenomeView } from '@jbrowse/react-linear-genome-view'
+import { createViewState, JBrowseLinearGenomeView } from '@jbrowse/react-linear-genome-view'
 
 interface Props {
   gene: string
@@ -18,17 +18,14 @@ export default function GeneViewer({ gene, lines }: Props) {
   }
   const tracks: any[] = [] // configure real tracks using the tdna data
 
-  const session = {
-    name: 'tdna',
-    view: {
-      id: 'linear-view',
-      type: 'LinearGenomeView',
-    },
-  }
+  const state = createViewState({
+    assembly,
+    tracks,
+  })
 
   return (
     <div className="h-96">
-      <LinearGenomeView assembly={assembly} tracks={tracks} defaultSession={session} />
+      <JBrowseLinearGenomeView viewState={state} />
     </div>
   )
 }
