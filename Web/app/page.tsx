@@ -32,22 +32,39 @@ export default function Home() {
   const [geneData, setGeneData] = useState<GeneData | null>(null)
   const [selectedLine, setSelectedLine] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const search = async () => {
+    if (!gene.trim()) {
+      setError('Please enter a gene ID')
+      return
+    }
+    
     setError('')
     setSelectedLine(null)
-    const res = await fetch(`/api/tdna?gene=${gene}`)
-    if (res.ok) {
-      const data = await res.json()
-      setLines(data.lines)
-      setLineDetails(data.lineDetails)
-      setGeneData(data.geneData)
-    } else {
-      const errorData = await res.json()
-      setError(errorData.error)
+    setLoading(true)
+    
+    try {
+      const res = await fetch(`/api/tdna?gene=${gene.trim()}`)
+      if (res.ok) {
+        const data = await res.json()
+        setLines(data.lines)
+        setLineDetails(data.lineDetails)
+        setGeneData(data.geneData)
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error || 'An error occurred while searching')
+        setLines([])
+        setLineDetails([])
+        setGeneData(null)
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.')
       setLines([])
       setLineDetails([])
       setGeneData(null)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -67,9 +84,28 @@ export default function Home() {
           onKeyPress={handleKeyPress}
           placeholder="Gene ID (e.g., AT1G01010)" 
         />
-        <Button onClick={search}>Search</Button>
+        <Button onClick={search} disabled={loading}>
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Searching...
+            </div>
+          ) : (
+            'Search'
+          )}
+        </Button>
       </div>
-      {error && <p className="text-red-600">{error}</p>}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
+      )}
+      {loading && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+          Searching for T-DNA lines in {gene}...
+        </div>
+      )}
       {lines.length > 0 && (
         <div className="space-y-4">
           <div>
