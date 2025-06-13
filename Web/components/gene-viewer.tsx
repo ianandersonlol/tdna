@@ -85,17 +85,6 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         {
           type: 'LinearBasicDisplay',
           displayId: 'gene-with-insertion-display',
-          renderer: {
-            type: 'SvgFeatureRenderer',
-            color1: (feature: any) => {
-              const featureType = feature.get('type')
-              if (featureType === 'insertion') return '#dc2626'
-              if (featureType === 'exon') return '#2563eb'
-              if (featureType === 'CDS') return '#16a34a'
-              if (featureType.includes('UTR')) return '#eab308'
-              return '#6b7280'
-            },
-          },
         },
       ],
     },
@@ -215,16 +204,10 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         </div>
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-blue-600 rounded"></div> Exon
+            <div className="w-3 h-3 bg-gray-500 rounded"></div> Gene Features
           </span>
           <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-green-600 rounded"></div> CDS
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-yellow-500 rounded"></div> UTR
-          </span>
-          <span className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-600 rounded"></div> T-DNA
+            <div className="w-3 h-3 bg-red-600 rounded"></div> T-DNA Insertion
           </span>
         </div>
       </div>
