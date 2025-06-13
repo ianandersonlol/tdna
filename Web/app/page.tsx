@@ -480,19 +480,28 @@ export default function Home() {
           </div>
         )}
         
-        {((viewMode === 'single' && selectedLine && geneData) || 
-          (viewMode === 'multi' && selectedLines.length > 0 && geneData)) && (
+        {viewMode === 'single' && selectedLine && geneData && (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-semibold mb-4">
-              Genome Browser - {
-                viewMode === 'single' 
-                  ? selectedLine 
-                  : `Comparing ${selectedLines.length} lines`
-              }
+              Genome Browser - {selectedLine}
+            </h3>
+            <GeneViewer 
+              gene={gene} 
+              selectedLine={selectedLine}
+              lineDetails={lineDetails}
+              geneData={geneData}
+            />
+          </div>
+        )}
+        
+        {viewMode === 'multi' && selectedLines.length > 0 && geneData && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-semibold mb-4">
+              Genome Browser - Comparing {selectedLines.length} lines
             </h3>
             <MultiGeneViewer 
               gene={gene} 
-              selectedLines={viewMode === 'single' ? [selectedLine!] : selectedLines}
+              selectedLines={selectedLines}
               lineDetails={lineDetails}
               geneData={geneData}
             />
