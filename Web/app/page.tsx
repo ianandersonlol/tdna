@@ -244,11 +244,15 @@ export default function Home() {
   }
 
   return (
-    <main className="p-4 space-y-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold">T-DNA Line Viewer</h1>
-      
-      {/* Search Mode Toggle */}
-      <div className="flex gap-2 mb-4">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="p-4 space-y-6 max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">T-DNA Line Viewer</h1>
+          <p className="text-gray-600">Search and explore T-DNA insertion lines in Arabidopsis thaliana</p>
+        </div>
+        
+        {/* Search Mode Toggle */}
+        <div className="flex flex-col sm:flex-row gap-2 justify-center mb-6">
         <button
           onClick={() => setSearchMode('gene')}
           className={`px-4 py-2 rounded ${
@@ -271,8 +275,8 @@ export default function Home() {
         </button>
       </div>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
           <Input 
             value={gene} 
             onChange={e => handleInputChange(e.target.value)} 
@@ -312,8 +316,10 @@ export default function Home() {
             'Search'
           )}
         </Button>
-      </div>
-      {error && (
+          </div>
+        </div>
+        
+        {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
@@ -331,11 +337,11 @@ export default function Home() {
         </div>
       )}
       
-      {/* Reverse Search Results */}
-      {reverseSearchResults.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="font-semibold">Genes affected by T-DNA line {gene} ({reverseSearchResults.length} found)</h2>
+        {/* Reverse Search Results */}
+        {reverseSearchResults.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+              <h2 className="text-xl font-semibold">Genes affected by T-DNA line {gene} ({reverseSearchResults.length} found)</h2>
             <div className="flex gap-2">
               <Button onClick={exportResults} className="text-sm px-3 py-1">Export CSV</Button>
               <Button onClick={shareResults} className="text-sm px-3 py-1">Share Link</Button>
@@ -368,14 +374,15 @@ export default function Home() {
                 )}
               </div>
             ))}
+            </div>
           </div>
-        </div>
-      )}
-      {lines.length > 0 && (
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="font-semibold">T-DNA Lines for {gene} ({lines.length} found)</h2>
+        )}
+        
+        {lines.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4">
+                <h2 className="text-xl font-semibold">T-DNA Lines for {gene} ({lines.length} found)</h2>
               <div className="flex gap-2">
                 <Button onClick={exportResults} className="text-sm px-3 py-1">Export CSV</Button>
                 <Button onClick={shareResults} className="text-sm px-3 py-1">Share Link</Button>
@@ -444,26 +451,28 @@ export default function Home() {
               })}
             </div>
           </div>
-          {((viewMode === 'single' && selectedLine && geneData) || 
-            (viewMode === 'multi' && selectedLines.length > 0 && geneData)) && (
-            <div>
-              <h3 className="font-semibold mb-2">
-                Genome Browser - {
-                  viewMode === 'single' 
-                    ? selectedLine 
-                    : `Comparing ${selectedLines.length} lines`
-                }
-              </h3>
-              <MultiGeneViewer 
-                gene={gene} 
-                selectedLines={viewMode === 'single' ? [selectedLine!] : selectedLines}
-                lineDetails={lineDetails}
-                geneData={geneData}
-              />
-            </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+        
+        {((viewMode === 'single' && selectedLine && geneData) || 
+          (viewMode === 'multi' && selectedLines.length > 0 && geneData)) && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-xl font-semibold mb-4">
+              Genome Browser - {
+                viewMode === 'single' 
+                  ? selectedLine 
+                  : `Comparing ${selectedLines.length} lines`
+              }
+            </h3>
+            <MultiGeneViewer 
+              gene={gene} 
+              selectedLines={viewMode === 'single' ? [selectedLine!] : selectedLines}
+              lineDetails={lineDetails}
+              geneData={geneData}
+            />
+          </div>
+        )}
+      </div>
     </main>
   )
 }
