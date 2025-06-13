@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import dynamic from 'next/dynamic'
 
 const GeneViewer = dynamic(() => import('@/components/gene-viewer'), { ssr: false })
+const MultiGeneViewer = dynamic(() => import('@/components/multi-gene-viewer'), { ssr: false })
 
 interface TDNALineDetail {
   lineId: string
@@ -35,6 +36,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [viewMode, setViewMode] = useState<'single' | 'multi'>('single')
+  const [selectedLines, setSelectedLines] = useState<string[]>([])
 
   const fetchSuggestions = async (query: string) => {
     if (query.length < 2) {
@@ -64,6 +67,28 @@ export default function Home() {
     setGene(suggestion)
     setSuggestions([])
     setShowSuggestions(false)
+  }
+
+  const toggleLineSelection = (lineId: string) => {
+    if (viewMode === 'single') {
+      setSelectedLine(lineId)
+    } else {
+      setSelectedLines(prev => 
+        prev.includes(lineId) 
+          ? prev.filter(id => id !== lineId)
+          : [...prev, lineId]
+      )
+    }
+  }
+
+  const handleViewModeChange = (mode: 'single' | 'multi') => {
+    setViewMode(mode)
+    if (mode === 'single') {
+      setSelectedLines([])
+      setSelectedLine(null)
+    } else {
+      setSelectedLine(null)
+    }
   }
 
   const search = async () => {
@@ -158,19 +183,53 @@ export default function Home() {
       {lines.length > 0 && (
         <div className="space-y-4">
           <div>
-            <h2 className="font-semibold mb-2">T-DNA Lines for {gene} ({lines.length} found)</h2>
-            <p className="text-sm text-gray-600 mb-2">Click on a line to view in genome browser:</p>
-            <div className="space-y-2">
-              {lineDetails.map(lineDetail => (
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="font-semibold">T-DNA Lines for {gene} ({lines.length} found)</h2>
+              <div className="flex gap-2">
                 <button
-                  key={lineDetail.lineId}
-                  onClick={() => setSelectedLine(lineDetail.lineId)}
-                  className={`block w-full text-left px-4 py-3 rounded border transition-colors ${
-                    selectedLine === lineDetail.lineId
-                      ? 'bg-blue-100 border-blue-300 text-blue-900'
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  onClick={() => handleViewModeChange('single')}
+                  className={`px-3 py-1 rounded text-sm ${
+                    viewMode === 'single' 
+                      ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
                   }`}
                 >
+                  Single View
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('multi')}
+                  className={`px-3 py-1 rounded text-sm ${
+                    viewMode === 'multi' 
+                      ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                >
+                  Compare Multiple
+                </button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              {viewMode === 'single' 
+                ? 'Click on a line to view in genome browser:' 
+                : 'Select multiple lines to compare in genome browser:'
+              }
+            </p>
+            <div className="space-y-2">
+              {lineDetails.map(lineDetail => {
+                const isSelected = viewMode === 'single' 
+                  ? selectedLine === lineDetail.lineId
+                  : selectedLines.includes(lineDetail.lineId)
+                
+                return (
+                  <button
+                    key={lineDetail.lineId}
+                    onClick={() => toggleLineSelection(lineDetail.lineId)}
+                    className={`block w-full text-left px-4 py-3 rounded border transition-colors ${
+                      isSelected
+                        ? 'bg-blue-100 border-blue-300 text-blue-900'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-medium">{lineDetail.lineId}</div>
@@ -187,16 +246,24 @@ export default function Home() {
                       <div className="text-gray-500 mt-1">ABRC: {lineDetail.abrc}</div>
                     </div>
                   </div>
-                </button>
-              ))}
+                  </button>
+                )
+              })}
             </div>
           </div>
-          {selectedLine && geneData && (
+          {((viewMode === 'single' && selectedLine && geneData) || 
+            (viewMode === 'multi' && selectedLines.length > 0 && geneData)) && (
             <div>
-              <h3 className="font-semibold mb-2">Genome Browser - {selectedLine}</h3>
-              <GeneViewer 
+              <h3 className="font-semibold mb-2">
+                Genome Browser - {
+                  viewMode === 'single' 
+                    ? selectedLine 
+                    : `Comparing ${selectedLines.length} lines`
+                }
+              </h3>
+              <MultiGeneViewer 
                 gene={gene} 
-                selectedLine={selectedLine} 
+                selectedLines={viewMode === 'single' ? [selectedLine!] : selectedLines}
                 lineDetails={lineDetails}
                 geneData={geneData}
               />
