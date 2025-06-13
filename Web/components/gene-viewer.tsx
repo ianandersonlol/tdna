@@ -1,7 +1,5 @@
 'use client'
 
-import { createViewState, JBrowseLinearGenomeView } from '@jbrowse/react-linear-genome-view'
-
 interface TDNALineDetail {
   lineId: string
   chromosome: string
@@ -33,127 +31,178 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
   const selectedLineData = lineDetails.find(line => line.lineId === selectedLine)
   if (!selectedLineData) return <div>No data for selected line</div>
 
-  const assembly = {
-    name: 'A_thaliana',
-    sequence: {
-      type: 'ReferenceSequenceTrack',
-      trackId: 'athaliana_ref',
-      adapter: { type: 'FromConfigSequenceAdapter', features: [] },
-    },
-  }
+  // Calculate scale
+  const geneLength = geneData.end - geneData.start
+  const viewWidth = 800 // Fixed width for the visualization
+  const scale = viewWidth / geneLength
   
-  // Create gene features track with T-DNA insertion
-  const geneFeatures = geneData.features.map(feature => ({
-    uniqueId: `${feature.type}_${feature.start}_${feature.stop}`,
-    refName: feature.chr,
-    start: feature.start - 1, // JBrowse uses 0-based coordinates
-    end: feature.stop,
-    type: feature.type,
-    name: feature.type,
-    strand: feature.strand === '+' ? 1 : -1,
-  }))
-
-  // Add T-DNA insertion as a feature in the same track
-  const insertionFeature = {
-    uniqueId: `tdna_insertion_${selectedLine}`,
-    refName: selectedLineData.chromosome,
-    start: selectedLineData.position - 1, // JBrowse uses 0-based coordinates
-    end: selectedLineData.position,
-    type: 'insertion',
-    name: `T-DNA ${selectedLine}`,
-    description: `T-DNA insertion ${selectedLine} at position ${selectedLineData.position} (${selectedLineData.hm})`,
-  }
+  // Group features by type
+  const exons = geneData.features.filter(f => f.type === 'exon')
+  const cdss = geneData.features.filter(f => f.type === 'CDS')
+  const utrs = geneData.features.filter(f => f.type.includes('UTR'))
   
-  // Combine gene features with insertion
-  const allFeatures = [...geneFeatures, insertionFeature]
-
-  // Create single track with both gene structure and T-DNA insertion
-  const tracks: any[] = [
-    {
-      type: 'FeatureTrack',
-      trackId: 'gene-with-insertion',
-      name: `${gene} with T-DNA insertion ${selectedLine}`,
-      assemblyNames: ['A_thaliana'],
-      adapter: {
-        type: 'FromConfigAdapter',
-        features: allFeatures,
-      },
-      displays: [
-        {
-          type: 'LinearBasicDisplay',
-          displayId: 'gene-with-insertion-display',
-          renderer: {
-            type: 'SvgFeatureRenderer',
-            color1: (feature: any) => {
-              if (feature.get('type') === 'insertion') {
-                return 'red'
-              }
-              return 'blue'
-            },
-            height: (feature: any) => {
-              if (feature.get('type') === 'insertion') {
-                return 20
-              }
-              return 10
-            },
-            shape: (feature: any) => {
-              if (feature.get('type') === 'insertion') {
-                return 'triangle'
-              }
-              return 'box'
-            },
-          },
-        },
-      ],
-    },
-  ]
-
-  // Calculate view region with some padding
-  const padding = Math.max(1000, (geneData.end - geneData.start) * 0.2)
-  const viewStart = Math.max(1, geneData.start - padding)
-  const viewEnd = geneData.end + padding
-
-  const state = createViewState({
-    assembly,
-    tracks,
-    defaultSession: {
-      name: 'T-DNA Session',
-      view: {
-        id: 'linearGenomeView',
-        type: 'LinearGenomeView',
-        displayedRegions: [
-          {
-            refName: geneData.chromosome,
-            start: viewStart,
-            end: viewEnd,
-            assemblyName: 'A_thaliana',
-          },
-        ],
-        tracks: [
-          {
-            id: 'gene-with-insertion',
-            type: 'FeatureTrack',
-            configuration: 'gene-with-insertion',
-            displays: [
-              {
-                id: 'gene-with-insertion-display',
-                type: 'LinearBasicDisplay',
-                configuration: 'gene-with-insertion-display',
-              },
-            ],
-          },
-        ],
-      },
-    },
-  })
-
+  // Calculate insertion position relative to gene
+  const insertionRelativePos = (selectedLineData.position - geneData.start) * scale
+  
   return (
-    <div className="border rounded-lg p-4">
-      <div className="h-96 w-full">
-        <JBrowseLinearGenomeView viewState={state} />
+    <div className="border rounded-lg p-4 bg-white">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">{gene}</h3>
+        <p className="text-sm text-gray-600">
+          Chr{geneData.chromosome}: {geneData.start.toLocaleString()} - {geneData.end.toLocaleString()} ({geneData.strand} strand)
+        </p>
       </div>
-      <div className="mt-2 text-sm text-gray-600">
-        Showing T-DNA insertion data for line: <strong>{selectedLine}</strong> in gene: <strong>{gene}</strong>
+      
+      <div className="relative" style={{ height: '200px' }}>
+        {/* Gene baseline */}
+        <div 
+          className="absolute bg-gray-400" 
+          style={{
+            top: '100px',
+            left: '0',
+            width: `${viewWidth}px`,
+            height: '2px'
+          }}
+        />
+        
+        {/* Exons */}
+        {exons.map((exon, i) => {
+          const start = (exon.start - geneData.start) * scale
+          const width = (exon.stop - exon.start) * scale
+          return (
+            <div
+              key={`exon-${i}`}
+              className="absolute bg-blue-600 border border-blue-800"
+              style={{
+                top: '85px',
+                left: `${start}px`,
+                width: `${width}px`,
+                height: '30px'
+              }}
+              title={`Exon: ${exon.start}-${exon.stop}`}
+            />
+          )
+        })}
+        
+        {/* CDS regions */}
+        {cdss.map((cds, i) => {
+          const start = (cds.start - geneData.start) * scale
+          const width = (cds.stop - cds.start) * scale
+          return (
+            <div
+              key={`cds-${i}`}
+              className="absolute bg-green-600 border border-green-800"
+              style={{
+                top: '90px',
+                left: `${start}px`,
+                width: `${width}px`,
+                height: '20px'
+              }}
+              title={`CDS: ${cds.start}-${cds.stop}`}
+            />
+          )
+        })}
+        
+        {/* UTRs */}
+        {utrs.map((utr, i) => {
+          const start = (utr.start - geneData.start) * scale
+          const width = (utr.stop - utr.start) * scale
+          return (
+            <div
+              key={`utr-${i}`}
+              className="absolute bg-yellow-500 border border-yellow-700"
+              style={{
+                top: '92px',
+                left: `${start}px`,
+                width: `${width}px`,
+                height: '16px'
+              }}
+              title={`${utr.type}: ${utr.start}-${utr.stop}`}
+            />
+          )
+        })}
+        
+        {/* T-DNA Insertion Marker */}
+        <div
+          className="absolute"
+          style={{
+            left: `${insertionRelativePos - 10}px`,
+            top: '40px'
+          }}
+        >
+          {/* Arrow shaft */}
+          <div 
+            className="absolute bg-red-600"
+            style={{
+              left: '9px',
+              top: '0',
+              width: '2px',
+              height: '40px'
+            }}
+          />
+          {/* Arrow head */}
+          <div 
+            className="absolute"
+            style={{
+              left: '0',
+              top: '35px',
+              width: '0',
+              height: '0',
+              borderLeft: '10px solid transparent',
+              borderRight: '10px solid transparent',
+              borderTop: '15px solid #dc2626'
+            }}
+          />
+          {/* Label */}
+          <div 
+            className="absolute bg-red-600 text-white px-2 py-1 rounded text-xs font-medium whitespace-nowrap"
+            style={{
+              left: '-30px',
+              top: '-25px'
+            }}
+          >
+            {selectedLine}
+          </div>
+        </div>
+        
+        {/* Position label */}
+        <div 
+          className="absolute text-xs text-gray-600"
+          style={{
+            left: `${insertionRelativePos - 20}px`,
+            top: '130px'
+          }}
+        >
+          {selectedLineData.position.toLocaleString()}
+        </div>
+        
+        {/* Legend */}
+        <div className="absolute right-0 top-0 text-xs">
+          <div className="flex items-center gap-1 mb-1">
+            <div className="w-4 h-3 bg-blue-600 border border-blue-800"></div>
+            <span>Exon</span>
+          </div>
+          <div className="flex items-center gap-1 mb-1">
+            <div className="w-4 h-3 bg-green-600 border border-green-800"></div>
+            <span>CDS</span>
+          </div>
+          <div className="flex items-center gap-1 mb-1">
+            <div className="w-4 h-3 bg-yellow-500 border border-yellow-700"></div>
+            <span>UTR</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-red-600"></div>
+            <span>T-DNA</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4 text-sm">
+        <p className="font-medium">T-DNA Insertion Details:</p>
+        <p className="text-gray-600">
+          Line: {selectedLine} | Position: {selectedLineData.position.toLocaleString()} | 
+          Hit Region: {selectedLineData.hitRegion} | Status: {selectedLineData.hm}
+        </p>
       </div>
     </div>
   )
