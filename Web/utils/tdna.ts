@@ -156,7 +156,7 @@ export class TdnaData {
         position: data.pos,
         hitRegion: confirmedData?.['Hit region'] || 'Unknown',
         hm: confirmedData?.HM || 'Unknown',
-        abrc: confirmedData?.ABRC || 'Unknown'
+        abrc: confirmedData?.ABRC || 'No ABRC data'
       }
     })
   }

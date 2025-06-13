@@ -444,7 +444,32 @@ export default function Home() {
                       }`}>
                         {lineDetail.hm}
                       </div>
-                      <div className="text-gray-500 mt-1">ABRC: {lineDetail.abrc}</div>
+                      <div className="text-gray-500 mt-1">
+                        ABRC: {lineDetail.abrc}
+                        {lineDetail.lineId && (
+                          <span className="ml-2">
+                            <a 
+                              href={`https://www.arabidopsis.org/servlets/TairObject?type=germplasm&name=${lineDetail.lineId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              TAIR
+                            </a>
+                            {' | '}
+                            <a 
+                              href={`https://abrc.osu.edu/stocks/number/${lineDetail.lineId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              ABRC
+                            </a>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   </button>

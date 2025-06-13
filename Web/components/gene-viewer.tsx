@@ -42,7 +42,7 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   }
   
-  // Create gene features track
+  // Create gene features track with T-DNA insertion
   const geneFeatures = geneData.features.map(feature => ({
     uniqueId: `${feature.type}_${feature.start}_${feature.stop}`,
     refName: feature.chr,
@@ -53,37 +53,58 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Create tracks for the selected T-DNA line and gene structure
+  // Add T-DNA insertion as a feature in the same track
+  const insertionFeature = {
+    uniqueId: `tdna_insertion_${selectedLine}`,
+    refName: selectedLineData.chromosome,
+    start: selectedLineData.position - 1, // JBrowse uses 0-based coordinates
+    end: selectedLineData.position,
+    type: 'insertion',
+    name: `T-DNA ${selectedLine}`,
+    description: `T-DNA insertion ${selectedLine} at position ${selectedLineData.position} (${selectedLineData.hm})`,
+  }
+  
+  // Combine gene features with insertion
+  const allFeatures = [...geneFeatures, insertionFeature]
+
+  // Create single track with both gene structure and T-DNA insertion
   const tracks: any[] = [
     {
       type: 'FeatureTrack',
-      trackId: 'gene-structure',
-      name: `Gene Structure - ${gene}`,
+      trackId: 'gene-with-insertion',
+      name: `${gene} with T-DNA insertion ${selectedLine}`,
       assemblyNames: ['A_thaliana'],
       adapter: {
         type: 'FromConfigAdapter',
-        features: geneFeatures,
+        features: allFeatures,
       },
-    },
-    {
-      type: 'FeatureTrack',
-      trackId: 'tdna-insertions',
-      name: `T-DNA Insertion - ${selectedLine}`,
-      assemblyNames: ['A_thaliana'],
-      adapter: {
-        type: 'FromConfigAdapter',
-        features: [
-          {
-            uniqueId: selectedLine,
-            refName: selectedLineData.chromosome,
-            start: selectedLineData.position - 1, // JBrowse uses 0-based coordinates
-            end: selectedLineData.position,
-            type: 'insertion',
-            name: selectedLine,
-            description: `T-DNA insertion ${selectedLine} at position ${selectedLineData.position} (${selectedLineData.hm})`,
+      displays: [
+        {
+          type: 'LinearBasicDisplay',
+          displayId: 'gene-with-insertion-display',
+          renderer: {
+            type: 'SvgFeatureRenderer',
+            color1: (feature: any) => {
+              if (feature.get('type') === 'insertion') {
+                return 'red'
+              }
+              return 'blue'
+            },
+            height: (feature: any) => {
+              if (feature.get('type') === 'insertion') {
+                return 20
+              }
+              return 10
+            },
+            shape: (feature: any) => {
+              if (feature.get('type') === 'insertion') {
+                return 'triangle'
+              }
+              return 'box'
+            },
           },
-        ],
-      },
+        },
+      ],
     },
   ]
 
@@ -110,26 +131,14 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         ],
         tracks: [
           {
-            id: 'gene-structure',
+            id: 'gene-with-insertion',
             type: 'FeatureTrack',
-            configuration: 'gene-structure',
+            configuration: 'gene-with-insertion',
             displays: [
               {
-                id: 'gene-structure-LinearBasicDisplay',
+                id: 'gene-with-insertion-display',
                 type: 'LinearBasicDisplay',
-                configuration: 'gene-structure-LinearBasicDisplay',
-              },
-            ],
-          },
-          {
-            id: 'tdna-insertions',
-            type: 'FeatureTrack',
-            configuration: 'tdna-insertions',
-            displays: [
-              {
-                id: 'tdna-insertions-LinearBasicDisplay',
-                type: 'LinearBasicDisplay',
-                configuration: 'tdna-insertions-LinearBasicDisplay',
+                configuration: 'gene-with-insertion-display',
               },
             ],
           },
