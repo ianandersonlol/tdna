@@ -33,6 +33,38 @@ export default function Home() {
   const [selectedLine, setSelectedLine] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  const fetchSuggestions = async (query: string) => {
+    if (query.length < 2) {
+      setSuggestions([])
+      setShowSuggestions(false)
+      return
+    }
+    
+    try {
+      const res = await fetch(`/api/genes?q=${encodeURIComponent(query)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSuggestions(data.genes)
+        setShowSuggestions(true)
+      }
+    } catch (err) {
+      console.error('Error fetching suggestions:', err)
+    }
+  }
+
+  const handleInputChange = (value: string) => {
+    setGene(value)
+    fetchSuggestions(value)
+  }
+
+  const selectSuggestion = (suggestion: string) => {
+    setGene(suggestion)
+    setSuggestions([])
+    setShowSuggestions(false)
+  }
 
   const search = async () => {
     if (!gene.trim()) {
@@ -78,12 +110,29 @@ export default function Home() {
     <main className="p-4 space-y-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">T-DNA Line Viewer</h1>
       <div className="flex gap-2">
-        <Input 
-          value={gene} 
-          onChange={e => setGene(e.target.value)} 
-          onKeyPress={handleKeyPress}
-          placeholder="Gene ID (e.g., AT1G01010)" 
-        />
+        <div className="relative flex-1">
+          <Input 
+            value={gene} 
+            onChange={e => handleInputChange(e.target.value)} 
+            onKeyPress={handleKeyPress}
+            onFocus={() => gene.length >= 2 && setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+            placeholder="Gene ID (e.g., AT1G01010)" 
+          />
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+              {suggestions.map(suggestion => (
+                <button
+                  key={suggestion}
+                  onClick={() => selectSuggestion(suggestion)}
+                  className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <Button onClick={search} disabled={loading}>
           {loading ? (
             <div className="flex items-center gap-2">

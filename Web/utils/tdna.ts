@@ -160,6 +160,16 @@ export class TdnaData {
       }
     })
   }
+
+  getAllAvailableGenes() {
+    const allGenes = new Set<string>()
+    this.confirmed.forEach(c => {
+      if (c['Target Gene']) {
+        allGenes.add(c['Target Gene'])
+      }
+    })
+    return Array.from(allGenes).sort()
+  }
 }
 
 let data: TdnaData | null = null
