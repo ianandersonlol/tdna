@@ -54,58 +54,49 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Create separate tracks for gene features and T-DNA insertion
+  // Add T-DNA insertion as a prominent vertical bar
+  const tdnaFeature = {
+    uniqueId: `tdna_${selectedLine}`,
+    refName: selectedLineData.chromosome,
+    start: selectedLineData.position - 25, // Make it 50bp wide for visibility
+    end: selectedLineData.position + 25,
+    type: 'misc_feature',
+    name: `T-DNA: ${selectedLine}`,
+    score: 1000,
+    strand: 0,
+    attributes: {
+      Name: [`T-DNA: ${selectedLine}`],
+      Type: ['T-DNA_insertion'],
+      Position: [selectedLineData.position.toString()],
+      ABRC: [selectedLineData.abrc || 'N/A'],
+      HM: [selectedLineData.hm || 'N/A'],
+      Color: ['#ff0000'],
+    },
+  }
+
+  // Combine all features
+  const allFeatures = [...geneFeatures, tdnaFeature]
+
+  // Create single track with both gene and insertion
   const tracks: any[] = [
     {
       type: 'FeatureTrack',
-      trackId: 'gene-features',
-      name: `${gene}`,
+      trackId: 'gene-with-tdna',
+      name: `${gene} with T-DNA`,
       assemblyNames: ['A_thaliana'],
       adapter: {
         type: 'FromConfigAdapter',
-        features: geneFeatures,
+        features: allFeatures,
       },
       displays: [
         {
           type: 'LinearBasicDisplay',
-          displayId: 'gene-features-display',
-          height: 100,
-        },
-      ],
-    },
-    {
-      type: 'FeatureTrack',
-      trackId: 'tdna-insertion',
-      name: 'T-DNA Insertion',
-      assemblyNames: ['A_thaliana'],
-      adapter: {
-        type: 'FromConfigAdapter',
-        features: [{
-          uniqueId: `tdna_insertion_${selectedLine}`,
-          refName: selectedLineData.chromosome,
-          start: selectedLineData.position - 50, // Make it wider for visibility
-          end: selectedLineData.position + 50,
-          type: 'box',
-          name: `T-DNA ${selectedLine}`,
-          description: `T-DNA insertion at position ${selectedLineData.position}`,
-          score: 1000,
-          attributes: {
-            Name: [`T-DNA ${selectedLine}`],
-            Position: [selectedLineData.position.toString()],
-            Type: ['T-DNA Insertion'],
-            ABRC: [selectedLineData.abrc || 'N/A'],
-            HM: [selectedLineData.hm || 'N/A'],
-          },
-        }],
-      },
-      displays: [
-        {
-          type: 'LinearBasicDisplay',
-          displayId: 'tdna-insertion-display',
-          height: 60,
+          displayId: 'gene-with-tdna-display',
+          height: 150,
           renderer: {
             type: 'SvgFeatureRenderer',
-            color: 'function(feature) { return "#ff0000" }',
+            color: 'function(feature) { return feature.type === "misc_feature" ? "#ff0000" : "#0080ff" }',
+            height: 20,
             displayMode: 'normal',
           },
         },
@@ -113,17 +104,14 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   ]
 
-  // Center view on T-DNA insertion position
+  // Center view tightly on T-DNA insertion position
   const insertionPosition = selectedLineData.position
-  // Calculate view range to show the whole gene with some padding
-  const geneLength = geneData.end - geneData.start
-  const minViewRange = 10000 // Minimum 10kb view
-  const viewRange = Math.max(minViewRange, geneLength * 2) // 2x gene length for context
+  // Use a fixed range that shows context without requiring dragging
+  const viewRange = 5000 // 5kb total view (2.5kb on each side)
   
-  // Center on insertion but ensure we show the gene
-  const viewCenter = insertionPosition
-  const viewStart = Math.max(1, viewCenter - viewRange / 2)
-  const viewEnd = viewCenter + viewRange / 2
+  // Center exactly on insertion
+  const viewStart = Math.max(1, insertionPosition - viewRange / 2)
+  const viewEnd = insertionPosition + viewRange / 2
 
   const state = createViewState({
     assembly,
@@ -143,28 +131,15 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         ],
         tracks: [
           {
-            id: 'gene-features',
+            id: 'gene-with-tdna',
             type: 'FeatureTrack',
-            configuration: 'gene-features',
+            configuration: 'gene-with-tdna',
             displays: [
               {
-                id: 'gene-features-display',
+                id: 'gene-with-tdna-display',
                 type: 'LinearBasicDisplay',
-                configuration: 'gene-features-display',
-                height: 100,
-              },
-            ],
-          },
-          {
-            id: 'tdna-insertion',
-            type: 'FeatureTrack',
-            configuration: 'tdna-insertion',
-            displays: [
-              {
-                id: 'tdna-insertion-display',
-                type: 'LinearBasicDisplay',
-                configuration: 'tdna-insertion-display',
-                height: 50,
+                configuration: 'gene-with-tdna-display',
+                height: 150,
               },
             ],
           },
