@@ -108,6 +108,58 @@ export class TdnaData {
     const filtered = Array.from(uniq.entries()).filter(([, pos]) => cdspos.has(pos))
     return filtered.map(([id]) => id)
   }
+
+  getGeneData(gene: string) {
+    const geneGff = this.gff.filter(g => g.info.includes(`ID=${gene}`))
+    const geneFeatures = geneGff.filter(g => ['gene', 'CDS', 'five_prime_UTR', 'three_prime_UTR', 'exon'].includes(g.type))
+    
+    if (geneFeatures.length === 0) return null
+    
+    const chromosome = geneFeatures[0].chr
+    const start = Math.min(...geneFeatures.map(f => f.start))
+    const end = Math.max(...geneFeatures.map(f => f.stop))
+    
+    return {
+      gene,
+      chromosome,
+      start,
+      end,
+      strand: geneFeatures[0].strand,
+      features: geneFeatures
+    }
+  }
+
+  getTDNALineDetails(gene: string) {
+    const geneconfirmed = this.confirmed.filter(c => c['Target Gene'] === gene)
+    const lines = Array.from(new Set(geneconfirmed.map(g => g['T-DNA line'])))
+    if (lines.length === 0) return []
+
+    const geneGff = this.gff.filter(g => g.info.includes(`ID=${gene}`))
+      .filter(g => ['CDS', 'five_prime_UTR', 'three_prime_UTR'].includes(g.type))
+    const cds = geneGff.filter(g => g.type === 'CDS')
+    const cdspos = new Set<number>()
+    cds.forEach(c => { for (let i = c.start; i <= c.stop; i++) cdspos.add(i) })
+
+    const matches = this.location.filter(loc => lines.some(l => loc.V1.includes(l)))
+    const uniq = new Map<string, { pos: number, chr: string }>()
+    matches.forEach(m => { 
+      if (!uniq.has(m.V1)) uniq.set(m.V1, { pos: m.pos, chr: m.chr }) 
+    })
+    
+    const filtered = Array.from(uniq.entries()).filter(([, data]) => cdspos.has(data.pos))
+    
+    return filtered.map(([lineId, data]) => {
+      const confirmedData = geneconfirmed.find(c => c['T-DNA line'] === lineId)
+      return {
+        lineId,
+        chromosome: data.chr,
+        position: data.pos,
+        hitRegion: confirmedData?.['Hit region'] || 'Unknown',
+        hm: confirmedData?.HM || 'Unknown',
+        abrc: confirmedData?.ABRC || 'Unknown'
+      }
+    })
+  }
 }
 
 let data: TdnaData | null = null
