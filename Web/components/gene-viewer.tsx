@@ -47,7 +47,7 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
   return (
     <div className="border rounded-lg p-4 bg-white">
       <div className="mb-4">
-        <h3 className="text-lg font-semibold">{gene}</h3>
+        <h3 className="text-lg font-semibold">{gene} - CUSTOM VISUALIZATION</h3>
         <p className="text-sm text-gray-600">
           Chr{geneData.chromosome}: {geneData.start.toLocaleString()} - {geneData.end.toLocaleString()} ({geneData.strand} strand)
         </p>
