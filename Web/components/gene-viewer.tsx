@@ -54,16 +54,20 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Add T-DNA insertion as a prominent feature - make it a single position marker
+  // Add T-DNA insertion as a prominent feature - give it width to be visible
   const insertionFeature = {
     uniqueId: `tdna_insertion_${selectedLine}`,
     refName: selectedLineData.chromosome,
-    start: selectedLineData.position - 1, // Exact position
-    end: selectedLineData.position,
-    type: 'variant',
-    name: `🔺 T-DNA ${selectedLine}`,
+    start: selectedLineData.position - 100, // Give it width for visibility
+    end: selectedLineData.position + 100,
+    type: 'match',
+    name: `T-DNA ${selectedLine}`,
     description: `T-DNA insertion ${selectedLine} at position ${selectedLineData.position} (${selectedLineData.hm})`,
     score: 1000, // High score to make it prominent
+    attributes: {
+      Name: [`T-DNA ${selectedLine}`],
+      Note: [`Insertion at ${selectedLineData.position}`]
+    }
   }
   
   const allFeatures = [...geneFeatures, insertionFeature]
@@ -88,10 +92,11 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   ]
 
-  // Calculate view region with some padding
-  const padding = Math.max(1000, (geneData.end - geneData.start) * 0.2)
-  const viewStart = Math.max(1, geneData.start - padding)
-  const viewEnd = geneData.end + padding
+  // Center view on T-DNA insertion position
+  const insertionPosition = selectedLineData.position
+  const viewRange = Math.max(5000, (geneData.end - geneData.start) * 1.5) // Ensure we see the whole gene
+  const viewStart = Math.max(1, insertionPosition - viewRange / 2)
+  const viewEnd = insertionPosition + viewRange / 2
 
   const state = createViewState({
     assembly,
