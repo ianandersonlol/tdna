@@ -129,19 +129,65 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   })
 
-  // Calculate arrow position after JBrowse renders
+  // Calculate arrow position and track JBrowse view changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (containerRef.current) {
-        const viewWidth = containerRef.current.offsetWidth - 100 // Account for margins
-        const relativePosition = (selectedLineData.position - viewStart) / (viewEnd - viewStart)
-        const pixelPosition = relativePosition * viewWidth + 50 // Add left margin offset
-        setArrowPosition({ left: pixelPosition, visible: true })
-      }
-    }, 1000) // Give JBrowse time to render
+    let intervalId: NodeJS.Timeout
 
-    return () => clearTimeout(timer)
-  }, [selectedLineData.position, viewStart, viewEnd])
+    const updateArrowPosition = () => {
+      try {
+        if (containerRef.current && state?.session?.view) {
+          // Get current view from JBrowse state
+          const currentView = state.session.view
+          const displayedRegions = currentView.displayedRegions || []
+          
+          if (displayedRegions.length > 0) {
+            const region = displayedRegions[0]
+            const currentStart = region.start
+            const currentEnd = region.end
+            
+            // Find the track element
+            const trackElement = containerRef.current.querySelector('.MuiPaper-root')
+            if (trackElement) {
+              const trackRect = trackElement.getBoundingClientRect()
+              const containerRect = containerRef.current.getBoundingClientRect()
+              
+              // Calculate position based on current displayed region
+              const relativePosition = (selectedLineData.position - currentStart) / (currentEnd - currentStart)
+              const trackWidth = trackRect.width
+              const pixelPosition = trackRect.left - containerRect.left + (relativePosition * trackWidth)
+              
+              // Only show arrow if insertion is within visible region
+              if (selectedLineData.position >= currentStart && selectedLineData.position <= currentEnd) {
+                setArrowPosition({ left: pixelPosition, visible: true })
+              } else {
+                setArrowPosition({ left: 0, visible: false })
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Fallback to initial calculation if JBrowse state access fails
+        if (containerRef.current) {
+          const viewWidth = containerRef.current.offsetWidth - 100
+          const relativePosition = (selectedLineData.position - viewStart) / (viewEnd - viewStart)
+          const pixelPosition = relativePosition * viewWidth + 50
+          setArrowPosition({ left: pixelPosition, visible: true })
+        }
+      }
+    }
+
+    // Initial position after JBrowse loads
+    const timer = setTimeout(() => {
+      updateArrowPosition()
+      // Set up interval to track view changes
+      intervalId = setInterval(updateArrowPosition, 200)
+    }, 1500)
+
+    return () => {
+      clearTimeout(timer)
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [selectedLineData.position, viewStart, viewEnd, state])
 
   return (
     <div className="border rounded-lg p-4 relative" ref={containerRef}>
