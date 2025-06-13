@@ -7,9 +7,29 @@ import dynamic from 'next/dynamic'
 
 const GeneViewer = dynamic(() => import('@/components/gene-viewer'), { ssr: false })
 
+interface TDNALineDetail {
+  lineId: string
+  chromosome: string
+  position: number
+  hitRegion: string
+  hm: string
+  abrc: string
+}
+
+interface GeneData {
+  gene: string
+  chromosome: string
+  start: number
+  end: number
+  strand: string
+  features: any[]
+}
+
 export default function Home() {
   const [gene, setGene] = useState('')
   const [lines, setLines] = useState<string[]>([])
+  const [lineDetails, setLineDetails] = useState<TDNALineDetail[]>([])
+  const [geneData, setGeneData] = useState<GeneData | null>(null)
   const [selectedLine, setSelectedLine] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -20,9 +40,14 @@ export default function Home() {
     if (res.ok) {
       const data = await res.json()
       setLines(data.lines)
+      setLineDetails(data.lineDetails)
+      setGeneData(data.geneData)
     } else {
-      setError('Error fetching data')
+      const errorData = await res.json()
+      setError(errorData.error)
       setLines([])
+      setLineDetails([])
+      setGeneData(null)
     }
   }
 
@@ -66,10 +91,15 @@ export default function Home() {
               ))}
             </div>
           </div>
-          {selectedLine && (
+          {selectedLine && geneData && (
             <div>
               <h3 className="font-semibold mb-2">Genome Browser - {selectedLine}</h3>
-              <GeneViewer gene={gene} selectedLine={selectedLine} />
+              <GeneViewer 
+                gene={gene} 
+                selectedLine={selectedLine} 
+                lineDetails={lineDetails}
+                geneData={geneData}
+              />
             </div>
           )}
         </div>
