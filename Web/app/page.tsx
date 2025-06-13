@@ -253,89 +253,90 @@ export default function Home() {
         
         {/* Search Mode Toggle */}
         <div className="flex flex-col sm:flex-row gap-2 justify-center mb-6">
-        <button
-          onClick={() => setSearchMode('gene')}
-          className={`px-4 py-2 rounded ${
-            searchMode === 'gene' 
-              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-              : 'bg-gray-100 text-gray-700 border border-gray-300'
-          }`}
-        >
-          Search by Gene ID
-        </button>
-        <button
-          onClick={() => setSearchMode('line')}
-          className={`px-4 py-2 rounded ${
-            searchMode === 'line' 
-              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-              : 'bg-gray-100 text-gray-700 border border-gray-300'
-          }`}
-        >
-          Search by T-DNA Line
-        </button>
-      </div>
+          <button
+            onClick={() => setSearchMode('gene')}
+            className={`px-4 py-2 rounded ${
+              searchMode === 'gene' 
+                ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                : 'bg-gray-100 text-gray-700 border border-gray-300'
+            }`}
+          >
+            Search by Gene ID
+          </button>
+          <button
+            onClick={() => setSearchMode('line')}
+            className={`px-4 py-2 rounded ${
+              searchMode === 'line' 
+                ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+                : 'bg-gray-100 text-gray-700 border border-gray-300'
+            }`}
+          >
+            Search by T-DNA Line
+          </button>
+        </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex flex-col sm:flex-row gap-4">
-          <Input 
-            value={gene} 
-            onChange={e => handleInputChange(e.target.value)} 
-            onKeyPress={handleKeyPress}
-            onFocus={() => gene.length >= 2 && searchMode === 'gene' && setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder={searchMode === 'gene' ? "Gene ID (e.g., AT1G01010)" : "T-DNA Line ID (e.g., SALK_001234)"} 
-          />
-          {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={suggestion}
-                  onClick={() => selectSuggestion(suggestion)}
-                  className={`w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 ${
-                    index === selectedIndex 
-                      ? 'bg-blue-100 text-blue-900' 
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  {suggestion}
-                </button>
-              ))}
+            <div className="relative flex-1">
+              <Input 
+                value={gene} 
+                onChange={e => handleInputChange(e.target.value)} 
+                onKeyPress={handleKeyPress}
+                onFocus={() => gene.length >= 2 && searchMode === 'gene' && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder={searchMode === 'gene' ? "Gene ID (e.g., AT1G01010)" : "T-DNA Line ID (e.g., SALK_001234)"} 
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => selectSuggestion(suggestion)}
+                      className={`w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 ${
+                        index === selectedIndex 
+                          ? 'bg-blue-100 text-blue-900' 
+                          : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <Button 
-          onClick={searchMode === 'gene' ? search : reverseSearch} 
-          disabled={loading || reverseSearchLoading}
-        >
-          {(loading || reverseSearchLoading) ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              Searching...
-            </div>
-          ) : (
-            'Search'
-          )}
-        </Button>
+            <Button 
+              onClick={searchMode === 'gene' ? search : reverseSearch} 
+              disabled={loading || reverseSearchLoading}
+            >
+              {(loading || reverseSearchLoading) ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Searching...
+                </div>
+              ) : (
+                'Search'
+              )}
+            </Button>
           </div>
         </div>
         
         {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      )}
-      {loading && (
-        <div className="flex items-center gap-2 text-gray-600">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-          Searching for T-DNA lines in {gene}...
-        </div>
-      )}
-      {reverseSearchLoading && (
-        <div className="flex items-center gap-2 text-gray-600">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
-          Searching for genes affected by {gene}...
-        </div>
-      )}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+        {loading && (
+          <div className="flex items-center gap-2 text-gray-600">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+            Searching for T-DNA lines in {gene}...
+          </div>
+        )}
+        {reverseSearchLoading && (
+          <div className="flex items-center gap-2 text-gray-600">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+            Searching for genes affected by {gene}...
+          </div>
+        )}
       
         {/* Reverse Search Results */}
         {reverseSearchResults.length > 0 && (
