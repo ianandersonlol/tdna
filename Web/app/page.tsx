@@ -41,6 +41,7 @@ export default function Home() {
   const [searchMode, setSearchMode] = useState<'gene' | 'line'>('gene')
   const [reverseSearchResults, setReverseSearchResults] = useState<any[]>([])
   const [reverseSearchLoading, setReverseSearchLoading] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
 
   const fetchSuggestions = async (query: string) => {
     if (query.length < 2) {
@@ -202,11 +203,43 @@ export default function Home() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      if (showSuggestions && selectedIndex >= 0 && selectedIndex < suggestions.length) {
+        selectSuggestion(suggestions[selectedIndex])
+        return
+      }
+      
       if (searchMode === 'gene') {
         search()
       } else {
         reverseSearch()
       }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (showSuggestions) {
+        setSelectedIndex(prev => Math.min(prev + 1, suggestions.length - 1))
+      } else if (lineDetails.length > 0) {
+        const currentLineIndex = lineDetails.findIndex(l => l.lineId === selectedLine)
+        const nextIndex = Math.min(currentLineIndex + 1, lineDetails.length - 1)
+        if (nextIndex >= 0) {
+          toggleLineSelection(lineDetails[nextIndex].lineId)
+        }
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (showSuggestions) {
+        setSelectedIndex(prev => Math.max(prev - 1, -1))
+      } else if (lineDetails.length > 0) {
+        const currentLineIndex = lineDetails.findIndex(l => l.lineId === selectedLine)
+        const prevIndex = Math.max(currentLineIndex - 1, 0)
+        if (prevIndex >= 0) {
+          toggleLineSelection(lineDetails[prevIndex].lineId)
+        }
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+      setSelectedIndex(-1)
+      setSelectedLine(null)
+      setSelectedLines([])
     }
   }
 
@@ -250,11 +283,15 @@ export default function Home() {
           />
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map(suggestion => (
+              {suggestions.map((suggestion, index) => (
                 <button
                   key={suggestion}
                   onClick={() => selectSuggestion(suggestion)}
-                  className="w-full text-left px-3 py-2 hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                  className={`w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 ${
+                    index === selectedIndex 
+                      ? 'bg-blue-100 text-blue-900' 
+                      : 'hover:bg-gray-100'
+                  }`}
                 >
                   {suggestion}
                 </button>
