@@ -10,10 +10,12 @@ const GeneViewer = dynamic(() => import('@/components/gene-viewer'), { ssr: fals
 export default function Home() {
   const [gene, setGene] = useState('')
   const [lines, setLines] = useState<string[]>([])
+  const [selectedLine, setSelectedLine] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   const search = async () => {
     setError('')
+    setSelectedLine(null)
     const res = await fetch(`/api/tdna?gene=${gene}`)
     if (res.ok) {
       const data = await res.json()
@@ -25,22 +27,40 @@ export default function Home() {
   }
 
   return (
-    <main className="p-4 space-y-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold">tdna web</h1>
+    <main className="p-4 space-y-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold">T-DNA Line Viewer</h1>
       <div className="flex gap-2">
-        <Input value={gene} onChange={e => setGene(e.target.value)} placeholder="Gene ID" />
+        <Input value={gene} onChange={e => setGene(e.target.value)} placeholder="Gene ID (e.g., AT1G01010)" />
         <Button onClick={search}>Search</Button>
       </div>
       {error && <p className="text-red-600">{error}</p>}
       {lines.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="font-semibold">Lines</h2>
-          <ul className="list-disc pl-4">
-            {lines.map(l => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
-          <GeneViewer gene={gene} lines={lines} />
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-semibold mb-2">T-DNA Lines for {gene}</h2>
+            <p className="text-sm text-gray-600 mb-2">Click on a line to view in genome browser:</p>
+            <div className="space-y-1">
+              {lines.map(line => (
+                <button
+                  key={line}
+                  onClick={() => setSelectedLine(line)}
+                  className={`block w-full text-left px-3 py-2 rounded border transition-colors ${
+                    selectedLine === line
+                      ? 'bg-blue-100 border-blue-300 text-blue-900'
+                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  {line}
+                </button>
+              ))}
+            </div>
+          </div>
+          {selectedLine && (
+            <div>
+              <h3 className="font-semibold mb-2">Genome Browser - {selectedLine}</h3>
+              <GeneViewer gene={gene} selectedLine={selectedLine} />
+            </div>
+          )}
         </div>
       )}
     </main>
