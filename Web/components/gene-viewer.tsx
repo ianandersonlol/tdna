@@ -57,6 +57,20 @@ export default function GeneViewer({ gene, selectedLine }: Props) {
             assemblyName: 'A_thaliana',
           },
         ],
+        tracks: [
+          {
+            id: 'tdna-insertions',
+            type: 'FeatureTrack',
+            configuration: 'tdna-insertions',
+            displays: [
+              {
+                id: 'tdna-insertions-LinearBasicDisplay',
+                type: 'LinearBasicDisplay',
+                configuration: 'tdna-insertions-LinearBasicDisplay',
+              },
+            ],
+          },
+        ],
       },
     },
   })

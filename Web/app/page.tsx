@@ -26,11 +26,22 @@ export default function Home() {
     }
   }
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      search()
+    }
+  }
+
   return (
     <main className="p-4 space-y-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">T-DNA Line Viewer</h1>
       <div className="flex gap-2">
-        <Input value={gene} onChange={e => setGene(e.target.value)} placeholder="Gene ID (e.g., AT1G01010)" />
+        <Input 
+          value={gene} 
+          onChange={e => setGene(e.target.value)} 
+          onKeyPress={handleKeyPress}
+          placeholder="Gene ID (e.g., AT1G01010)" 
+        />
         <Button onClick={search}>Search</Button>
       </div>
       {error && <p className="text-red-600">{error}</p>}
