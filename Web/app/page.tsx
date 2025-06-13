@@ -154,6 +154,52 @@ export default function Home() {
     }
   }
 
+  const exportResults = () => {
+    if (searchMode === 'gene' && lineDetails.length > 0) {
+      const csvContent = [
+        'Line ID,Chromosome,Position,Hit Region,HM,ABRC',
+        ...lineDetails.map(line => 
+          `${line.lineId},${line.chromosome},${line.position},${line.hitRegion},${line.hm},${line.abrc}`
+        )
+      ].join('\n')
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `tdna_lines_${gene}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } else if (searchMode === 'line' && reverseSearchResults.length > 0) {
+      const csvContent = [
+        'Gene,Chromosome,Start,End,Strand,Insertion Position,HM,ABRC',
+        ...reverseSearchResults.map(result => 
+          `${result.gene},${result.geneData?.chromosome || ''},${result.geneData?.start || ''},${result.geneData?.end || ''},${result.geneData?.strand || ''},${result.lineDetail?.position || ''},${result.lineDetail?.hm || ''},${result.lineDetail?.abrc || ''}`
+        )
+      ].join('\n')
+      
+      const blob = new Blob([csvContent], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `genes_affected_by_${gene}.csv`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    }
+  }
+
+  const shareResults = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('search', gene)
+    url.searchParams.set('mode', searchMode)
+    
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      alert('Share link copied to clipboard!')
+    }).catch(() => {
+      alert('Failed to copy link. URL: ' + url.toString())
+    })
+  }
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (searchMode === 'gene') {
@@ -251,7 +297,13 @@ export default function Home() {
       {/* Reverse Search Results */}
       {reverseSearchResults.length > 0 && (
         <div className="space-y-4">
-          <h2 className="font-semibold">Genes affected by T-DNA line {gene} ({reverseSearchResults.length} found)</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="font-semibold">Genes affected by T-DNA line {gene} ({reverseSearchResults.length} found)</h2>
+            <div className="flex gap-2">
+              <Button onClick={exportResults} className="text-sm px-3 py-1">Export CSV</Button>
+              <Button onClick={shareResults} className="text-sm px-3 py-1">Share Link</Button>
+            </div>
+          </div>
           <div className="space-y-3">
             {reverseSearchResults.map(result => (
               <div key={result.gene} className="border rounded-lg p-4 bg-gray-50">
@@ -288,6 +340,8 @@ export default function Home() {
             <div className="flex justify-between items-center mb-2">
               <h2 className="font-semibold">T-DNA Lines for {gene} ({lines.length} found)</h2>
               <div className="flex gap-2">
+                <Button onClick={exportResults} className="text-sm px-3 py-1">Export CSV</Button>
+                <Button onClick={shareResults} className="text-sm px-3 py-1">Share Link</Button>
                 <button
                   onClick={() => handleViewModeChange('single')}
                   className={`px-3 py-1 rounded text-sm ${
