@@ -38,6 +38,9 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [viewMode, setViewMode] = useState<'single' | 'multi'>('single')
   const [selectedLines, setSelectedLines] = useState<string[]>([])
+  const [searchMode, setSearchMode] = useState<'gene' | 'line'>('gene')
+  const [reverseSearchResults, setReverseSearchResults] = useState<any[]>([])
+  const [reverseSearchLoading, setReverseSearchLoading] = useState(false)
 
   const fetchSuggestions = async (query: string) => {
     if (query.length < 2) {
@@ -91,6 +94,32 @@ export default function Home() {
     }
   }
 
+  const reverseSearch = async () => {
+    if (!gene.trim()) {
+      setError('Please enter a T-DNA line ID')
+      return
+    }
+    
+    setError('')
+    setReverseSearchLoading(true)
+    setReverseSearchResults([])
+    
+    try {
+      const res = await fetch(`/api/reverse-search?lineId=${encodeURIComponent(gene.trim())}`)
+      if (res.ok) {
+        const data = await res.json()
+        setReverseSearchResults(data.genes)
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error || 'An error occurred while searching')
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
+      setReverseSearchLoading(false)
+    }
+  }
+
   const search = async () => {
     if (!gene.trim()) {
       setError('Please enter a gene ID')
@@ -127,22 +156,51 @@ export default function Home() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      search()
+      if (searchMode === 'gene') {
+        search()
+      } else {
+        reverseSearch()
+      }
     }
   }
 
   return (
     <main className="p-4 space-y-4 max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold">T-DNA Line Viewer</h1>
+      
+      {/* Search Mode Toggle */}
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setSearchMode('gene')}
+          className={`px-4 py-2 rounded ${
+            searchMode === 'gene' 
+              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+              : 'bg-gray-100 text-gray-700 border border-gray-300'
+          }`}
+        >
+          Search by Gene ID
+        </button>
+        <button
+          onClick={() => setSearchMode('line')}
+          className={`px-4 py-2 rounded ${
+            searchMode === 'line' 
+              ? 'bg-blue-100 text-blue-800 border border-blue-300' 
+              : 'bg-gray-100 text-gray-700 border border-gray-300'
+          }`}
+        >
+          Search by T-DNA Line
+        </button>
+      </div>
+
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Input 
             value={gene} 
             onChange={e => handleInputChange(e.target.value)} 
             onKeyPress={handleKeyPress}
-            onFocus={() => gene.length >= 2 && setShowSuggestions(true)}
+            onFocus={() => gene.length >= 2 && searchMode === 'gene' && setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder="Gene ID (e.g., AT1G01010)" 
+            placeholder={searchMode === 'gene' ? "Gene ID (e.g., AT1G01010)" : "T-DNA Line ID (e.g., SALK_001234)"} 
           />
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
@@ -158,8 +216,11 @@ export default function Home() {
             </div>
           )}
         </div>
-        <Button onClick={search} disabled={loading}>
-          {loading ? (
+        <Button 
+          onClick={searchMode === 'gene' ? search : reverseSearch} 
+          disabled={loading || reverseSearchLoading}
+        >
+          {(loading || reverseSearchLoading) ? (
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
               Searching...
@@ -178,6 +239,47 @@ export default function Home() {
         <div className="flex items-center gap-2 text-gray-600">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
           Searching for T-DNA lines in {gene}...
+        </div>
+      )}
+      {reverseSearchLoading && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-600"></div>
+          Searching for genes affected by {gene}...
+        </div>
+      )}
+      
+      {/* Reverse Search Results */}
+      {reverseSearchResults.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="font-semibold">Genes affected by T-DNA line {gene} ({reverseSearchResults.length} found)</h2>
+          <div className="space-y-3">
+            {reverseSearchResults.map(result => (
+              <div key={result.gene} className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-medium text-lg">{result.gene}</h3>
+                  {result.lineDetail && (
+                    <div className="text-sm">
+                      <div className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                        result.lineDetail.hm === 'HMc' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {result.lineDetail.hm}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {result.lineDetail && (
+                  <div className="text-sm text-gray-600 mb-3">
+                    Insertion at {result.lineDetail.chromosome}:{result.lineDetail.position.toLocaleString()} • {result.lineDetail.hitRegion} • ABRC: {result.lineDetail.abrc}
+                  </div>
+                )}
+                {result.geneData && (
+                  <div className="text-sm text-gray-600">
+                    Location: {result.geneData.chromosome}:{result.geneData.start.toLocaleString()}-{result.geneData.end.toLocaleString()} ({result.geneData.strand})
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
       {lines.length > 0 && (

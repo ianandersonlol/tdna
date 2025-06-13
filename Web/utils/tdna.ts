@@ -170,6 +170,23 @@ export class TdnaData {
     })
     return Array.from(allGenes).sort()
   }
+
+  getGenesForTDNALine(lineId: string) {
+    // Find all genes that this T-DNA line affects
+    const matchingEntries = this.confirmed.filter(c => c['T-DNA line'] === lineId)
+    const genes = Array.from(new Set(matchingEntries.map(entry => entry['Target Gene'])))
+    
+    return genes.map(gene => {
+      const geneData = this.getGeneData(gene)
+      const lineDetails = this.getTDNALineDetails(gene).find(detail => detail.lineId === lineId)
+      
+      return {
+        gene,
+        geneData,
+        lineDetail: lineDetails
+      }
+    }).filter(result => result.geneData !== null)
+  }
 }
 
 let data: TdnaData | null = null
