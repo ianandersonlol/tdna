@@ -483,7 +483,7 @@ export default function Home() {
         {viewMode === 'single' && selectedLine && geneData && (
           <div className="bg-white rounded-lg shadow-md p-6">
             <h3 className="text-xl font-semibold mb-4">
-              Genome Browser - {selectedLine} (Custom View)
+              Genome Browser - {selectedLine}
             </h3>
             <GeneViewer 
               gene={gene} 
