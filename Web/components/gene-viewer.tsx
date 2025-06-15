@@ -57,52 +57,59 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Add T-DNA insertion as a prominent arrow/triangle
-  const tdnaFeature = {
-    uniqueId: `tdna_${selectedLine}`,
-    refName: normalizedChromosome, // Use normalized chromosome name
-    start: selectedLineData.position - 1, // Make it narrow for arrow shape
-    end: selectedLineData.position + 1,
-    type: 'T-DNA_insertion', // Custom type for special rendering
-    name: `T-DNA: ${selectedLine}`,
-    score: 1000,
-    strand: 0,
-    attributes: {
-      Name: [`T-DNA: ${selectedLine}`],
-      Type: ['T-DNA_insertion'],
-      Position: [selectedLineData.position.toString()],
-      ABRC: [selectedLineData.abrc || 'N/A'],
-      HM: [selectedLineData.hm || 'N/A'],
-      Color: ['#ff0000'],
-    },
-  }
-
-  // Combine all features
-  const allFeatures = [...geneFeatures, tdnaFeature]
-
-  // Create single track with both gene and insertion
+  // Create tracks: one for gene features, one for T-DNA insertion
   const tracks: any[] = [
     {
       type: 'FeatureTrack',
-      trackId: 'gene-with-tdna',
-      name: `${gene} with T-DNA`,
+      trackId: 'gene-features',
+      name: `${gene}`,
       assemblyNames: ['A_thaliana'],
       adapter: {
         type: 'FromConfigAdapter',
-        features: allFeatures,
+        features: geneFeatures,
       },
       displays: [
         {
           type: 'LinearBasicDisplay',
-          displayId: 'gene-with-tdna-display',
-          height: 150,
+          displayId: 'gene-features-display',
           renderer: {
             type: 'SvgFeatureRenderer',
-            color: 'function(feature) { return feature.type === "T-DNA_insertion" ? "#ff0000" : "#0080ff" }',
-            height: 'function(feature) { return feature.type === "T-DNA_insertion" ? 40 : 20 }',
-            displayMode: 'normal',
-            // Custom glyph for T-DNA insertion arrow
-            glyph: 'function(feature) { return feature.type === "T-DNA_insertion" ? "triangle" : "box" }',
+            color1: '#0080ff',
+            color2: '#0040ff',
+            color3: '#ffffff',
+          },
+        },
+      ],
+    },
+    {
+      type: 'FeatureTrack',
+      trackId: 'tdna-insertion',
+      name: `T-DNA: ${selectedLine}`,
+      assemblyNames: ['A_thaliana'],
+      adapter: {
+        type: 'FromConfigAdapter',
+        features: [
+          {
+            uniqueId: `tdna_${selectedLine}`,
+            refName: normalizedChromosome,
+            start: selectedLineData.position - 1,
+            end: selectedLineData.position + 1,
+            type: 'gene',
+            name: `T-DNA insertion at ${selectedLineData.position}`,
+            strand: 0,
+          }
+        ],
+      },
+      displays: [
+        {
+          type: 'LinearBasicDisplay',
+          displayId: 'tdna-insertion-display',
+          renderer: {
+            type: 'SvgFeatureRenderer',
+            color1: '#ff0000',
+            color2: '#cc0000',
+            color3: '#ffffff',
+            height: 30,
           },
         },
       ],
@@ -136,15 +143,26 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         ],
         tracks: [
           {
-            id: 'gene-with-tdna',
+            id: 'gene-features',
             type: 'FeatureTrack',
-            configuration: 'gene-with-tdna',
+            configuration: 'gene-features',
             displays: [
               {
-                id: 'gene-with-tdna-display',
+                id: 'gene-features-LinearBasicDisplay',
                 type: 'LinearBasicDisplay',
-                configuration: 'gene-with-tdna-display',
-                height: 150,
+                configuration: 'gene-features-LinearBasicDisplay',
+              },
+            ],
+          },
+          {
+            id: 'tdna-insertion',
+            type: 'FeatureTrack',
+            configuration: 'tdna-insertion',
+            displays: [
+              {
+                id: 'tdna-insertion-LinearBasicDisplay',
+                type: 'LinearBasicDisplay',
+                configuration: 'tdna-insertion-LinearBasicDisplay',
               },
             ],
           },
