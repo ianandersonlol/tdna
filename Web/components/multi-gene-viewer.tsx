@@ -43,9 +43,12 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
   }
   
   // Create gene features track
+  // Ensure consistent chromosome naming
+  const normalizedChromosome = geneData.chromosome.toLowerCase()
+  
   const geneFeatures = geneData.features.map(feature => ({
     uniqueId: `${feature.type}_${feature.start}_${feature.stop}`,
-    refName: feature.chr,
+    refName: normalizedChromosome, // Use normalized chromosome name
     start: feature.start - 1, // JBrowse uses 0-based coordinates
     end: feature.stop,
     type: feature.type,
@@ -57,7 +60,7 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
   const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7']
   const tdnaFeatures = selectedLineData.map((lineData, index) => ({
     uniqueId: lineData.lineId,
-    refName: lineData.chromosome,
+    refName: normalizedChromosome, // Use normalized chromosome name
     start: lineData.position - 1, // JBrowse uses 0-based coordinates
     end: lineData.position,
     type: 'insertion',
@@ -105,7 +108,7 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
         type: 'LinearGenomeView',
         displayedRegions: [
           {
-            refName: geneData.chromosome,
+            refName: normalizedChromosome, // Use normalized chromosome name
             start: viewStart,
             end: viewEnd,
             assemblyName: 'A_thaliana',

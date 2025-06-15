@@ -44,9 +44,12 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
   }
   
   // Create gene features with T-DNA insertion
+  // Ensure chromosome names match between gene features and T-DNA
+  const normalizedChromosome = selectedLineData.chromosome.toLowerCase()
+  
   const geneFeatures = geneData.features.map(feature => ({
     uniqueId: `${feature.type}_${feature.start}_${feature.stop}`,
-    refName: feature.chr,
+    refName: normalizedChromosome, // Use normalized chromosome name
     start: feature.start - 1, // JBrowse uses 0-based coordinates
     end: feature.stop,
     type: feature.type,
@@ -54,13 +57,13 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Add T-DNA insertion as a prominent vertical bar
+  // Add T-DNA insertion as a prominent arrow/triangle
   const tdnaFeature = {
     uniqueId: `tdna_${selectedLine}`,
-    refName: selectedLineData.chromosome,
-    start: selectedLineData.position - 25, // Make it 50bp wide for visibility
-    end: selectedLineData.position + 25,
-    type: 'misc_feature',
+    refName: normalizedChromosome, // Use normalized chromosome name
+    start: selectedLineData.position - 1, // Make it narrow for arrow shape
+    end: selectedLineData.position + 1,
+    type: 'T-DNA_insertion', // Custom type for special rendering
     name: `T-DNA: ${selectedLine}`,
     score: 1000,
     strand: 0,
@@ -95,9 +98,11 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
           height: 150,
           renderer: {
             type: 'SvgFeatureRenderer',
-            color: 'function(feature) { return feature.type === "misc_feature" ? "#ff0000" : "#0080ff" }',
-            height: 20,
+            color: 'function(feature) { return feature.type === "T-DNA_insertion" ? "#ff0000" : "#0080ff" }',
+            height: 'function(feature) { return feature.type === "T-DNA_insertion" ? 40 : 20 }',
             displayMode: 'normal',
+            // Custom glyph for T-DNA insertion arrow
+            glyph: 'function(feature) { return feature.type === "T-DNA_insertion" ? "triangle" : "box" }',
           },
         },
       ],
@@ -123,7 +128,7 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         type: 'LinearGenomeView',
         displayedRegions: [
           {
-            refName: geneData.chromosome,
+            refName: normalizedChromosome, // Use normalized chromosome name
             start: viewStart,
             end: viewEnd,
             assemblyName: 'A_thaliana',
