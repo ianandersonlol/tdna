@@ -58,16 +58,18 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
   }))
 
   // Add T-DNA insertion marker to gene features
-  // Create a visible marker at the insertion point
+  // Create a visible red marker at the insertion point
   const tdnaInsertionFeature = {
     uniqueId: `tdna_${selectedLine}`,
     refName: normalizedChromosome,
     start: selectedLineData.position - 10, // Make it 20bp wide for visibility
     end: selectedLineData.position + 10,
-    type: 'repeat_region', // This type typically renders with a distinct style
+    type: 'misc_feature', // Use misc_feature type for custom rendering
     name: `T-DNA: ${selectedLine} at position ${selectedLineData.position}`,
     strand: 0,
     score: 1000,
+    // Add color attribute to make it red
+    color: '#ff0000',
   }
 
   // Combine all features on single track
@@ -84,17 +86,41 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         type: 'FromConfigAdapter',
         features: allFeatures,
       },
+      displays: [
+        {
+          type: 'LinearBasicDisplay',
+          displayId: 'gene-track-display',
+          height: 180, // Increased from default (~150) by 20%
+          renderer: {
+            type: 'SvgFeatureRenderer',
+            color1: 'jexl:get(feature,"color") || "#0080ff"', // Use feature color if available, else blue
+            color2: 'jexl:get(feature,"color") || "#0040ff"',
+            color3: '#ffffff',
+          },
+        },
+      ],
     },
   ]
 
-  // Center view tightly on T-DNA insertion position
+  // Center view on T-DNA insertion position with gene context
   const insertionPosition = selectedLineData.position
-  // Use a fixed range that shows context without requiring dragging
-  const viewRange = 5000 // 5kb total view (2.5kb on each side)
+  // Calculate view range based on gene size and insertion position
+  const geneLength = geneData.end - geneData.start
   
-  // Center exactly on insertion
-  const viewStart = Math.max(1, insertionPosition - viewRange / 2)
-  const viewEnd = insertionPosition + viewRange / 2
+  // If insertion is within gene, show entire gene plus padding
+  if (insertionPosition >= geneData.start && insertionPosition <= geneData.end) {
+    const padding = Math.max(1000, geneLength * 0.2)
+    var viewStart = geneData.start - padding
+    var viewEnd = geneData.end + padding
+  } else {
+    // If insertion is outside gene, center on insertion with 5kb window
+    const viewRange = 5000
+    var viewStart = insertionPosition - viewRange / 2
+    var viewEnd = insertionPosition + viewRange / 2
+  }
+  
+  viewStart = Math.max(1, viewStart)
+  viewEnd = Math.max(viewStart + 1000, viewEnd) // Ensure minimum 1kb view
 
   const state = createViewState({
     assembly,
@@ -121,6 +147,7 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
               {
                 id: 'gene-track-display',
                 type: 'LinearBasicDisplay',
+                height: 180, // Match the track display height
               },
             ],
           },
