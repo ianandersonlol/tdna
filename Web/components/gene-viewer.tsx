@@ -55,6 +55,10 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     type: feature.type,
     name: feature.type,
     strand: feature.strand === '+' ? 1 : -1,
+    // Add standard GFF3 color attribute
+    attributes: {
+      color: ['blue'],
+    },
   }))
 
   // Add T-DNA insertion marker to gene features
@@ -68,8 +72,12 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     name: `T-DNA: ${selectedLine} at position ${selectedLineData.position}`,
     strand: 0,
     score: 1000,
-    // Add color attribute to make it red
-    color: '#ff0000',
+    // Add standard GFF3 attributes for color
+    attributes: {
+      color: ['red'],
+      Name: [`T-DNA: ${selectedLine}`],
+      ID: [`tdna_${selectedLine}`],
+    },
   }
 
   // Combine all features on single track
@@ -93,9 +101,6 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
           height: 180,
           renderer: {
             type: 'SvgFeatureRenderer',
-            color1: '#ff0000', // Try forcing red for all features first
-            color2: '#cc0000',
-            color3: '#ffffff',
           },
         },
       ],
