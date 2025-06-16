@@ -56,23 +56,17 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Create T-DNA insertion features with different colors
+  // Don't add T-DNA as features - we'll draw them as custom overlays
+  // Just use gene features
+  const allFeatures = geneFeatures
+  
+  // Store T-DNA data for custom rendering
   const colors = ['#ff0000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b']
-  const tdnaFeatures = selectedLineData.map((lineData, index) => ({
-    uniqueId: `tdna_${lineData.lineId}`,
-    refName: normalizedChromosome, // Use normalized chromosome name
-    start: lineData.position - 10, // Make it 20bp wide for visibility
-    end: lineData.position + 10,
-    type: 'misc_feature', // Use misc_feature for custom rendering
-    name: `T-DNA: ${lineData.lineId} at position ${lineData.position}`,
-    description: `T-DNA insertion ${lineData.lineId} at position ${lineData.position} (${lineData.hm})`,
-    strand: 0,
-    score: 1000,
+  const tdnaInsertions = selectedLineData.map((lineData, index) => ({
+    position: lineData.position,
+    label: lineData.lineId,
     color: colors[index % colors.length],
   }))
-
-  // Combine all features on a single track
-  const allFeatures = [...geneFeatures, ...tdnaFeatures]
 
   // Create single track with both gene and T-DNA features
   const tracks: any[] = [
@@ -92,6 +86,44 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
           height: 180, // Increased by 20% to prevent cutoff
           renderer: {
             type: 'SvgFeatureRenderer',
+            // Add custom afterRender function to draw T-DNA insertion lines
+            afterRender: `function(renderProps) {
+              const { region, bpPerPx, offsetPx } = renderProps
+              const insertions = ${JSON.stringify(tdnaInsertions)}
+              
+              insertions.forEach(insertion => {
+                // Calculate screen position of insertion
+                const screenX = (insertion.position - region.start) / bpPerPx - offsetPx
+                
+                // Create SVG line element
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+                line.setAttribute('x1', screenX)
+                line.setAttribute('y1', 20)  // Start near top of track
+                line.setAttribute('x2', screenX)
+                line.setAttribute('y2', 160) // End near bottom of track
+                line.setAttribute('stroke', insertion.color)
+                line.setAttribute('stroke-width', '2')
+                
+                // Create arrow triangle at bottom
+                const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+                triangle.setAttribute('points', (screenX-5) + ',160 ' + (screenX+5) + ',160 ' + screenX + ',170')
+                triangle.setAttribute('fill', insertion.color)
+                
+                // Create label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+                label.setAttribute('x', screenX + 10)
+                label.setAttribute('y', 175)
+                label.setAttribute('fill', insertion.color)
+                label.setAttribute('font-size', '12')
+                label.textContent = insertion.label
+                
+                // Add elements to the SVG
+                const svg = renderProps.svg
+                svg.appendChild(line)
+                svg.appendChild(triangle)
+                svg.appendChild(label)
+              })
+            }`,
           },
         },
       ],

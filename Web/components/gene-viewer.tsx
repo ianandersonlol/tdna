@@ -61,27 +61,9 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   }))
 
-  // Add T-DNA insertion marker to gene features
-  // Create a visible red marker at the insertion point
-  const tdnaInsertionFeature = {
-    uniqueId: `tdna_${selectedLine}`,
-    refName: normalizedChromosome,
-    start: selectedLineData.position - 10, // Make it 20bp wide for visibility
-    end: selectedLineData.position + 10,
-    type: 'misc_feature', // Use misc_feature type for custom rendering
-    name: `T-DNA: ${selectedLine} at position ${selectedLineData.position}`,
-    strand: 0,
-    score: 1000,
-    // Add standard GFF3 attributes for color
-    attributes: {
-      color: ['red'],
-      Name: [`T-DNA: ${selectedLine}`],
-      ID: [`tdna_${selectedLine}`],
-    },
-  }
-
-  // Combine all features on single track
-  const allFeatures = [...geneFeatures, tdnaInsertionFeature]
+  // Don't add T-DNA as a feature - we'll draw it as a custom overlay
+  // Just use gene features
+  const allFeatures = geneFeatures
 
   // Create single track with both gene and T-DNA features
   const tracks: any[] = [
@@ -101,6 +83,43 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
           height: 180,
           renderer: {
             type: 'SvgFeatureRenderer',
+            // Add custom afterRender function to draw T-DNA insertion line
+            afterRender: `function(renderProps) {
+              const { region, bpPerPx, offsetPx } = renderProps
+              const insertionPos = ${selectedLineData.position}
+              const insertionLabel = "${selectedLine}"
+              
+              // Calculate screen position of insertion
+              const screenX = (insertionPos - region.start) / bpPerPx - offsetPx
+              
+              // Create SVG line element
+              const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
+              line.setAttribute('x1', screenX)
+              line.setAttribute('y1', 20)  // Start near top of track
+              line.setAttribute('x2', screenX)
+              line.setAttribute('y2', 160) // End near bottom of track
+              line.setAttribute('stroke', '#ff0000')
+              line.setAttribute('stroke-width', '2')
+              
+              // Create arrow triangle at bottom
+              const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+              triangle.setAttribute('points', (screenX-5) + ',160 ' + (screenX+5) + ',160 ' + screenX + ',170')
+              triangle.setAttribute('fill', '#ff0000')
+              
+              // Create label
+              const label = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+              label.setAttribute('x', screenX + 10)
+              label.setAttribute('y', 175)
+              label.setAttribute('fill', '#ff0000')
+              label.setAttribute('font-size', '12')
+              label.textContent = insertionLabel
+              
+              // Add elements to the SVG
+              const svg = renderProps.svg
+              svg.appendChild(line)
+              svg.appendChild(triangle)
+              svg.appendChild(label)
+            }`,
           },
         },
       ],
