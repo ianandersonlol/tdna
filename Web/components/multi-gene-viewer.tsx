@@ -95,6 +95,8 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
             color1: 'jexl:get(feature,"color") || "#0080ff"', // Use feature color if available
             color2: 'jexl:get(feature,"color") || "#0040ff"',
             color3: '#ffffff',
+            // Use triangle glyph for T-DNA insertions (misc_feature), box for gene features
+            glyph: 'jexl:get(feature,"type") === "misc_feature" ? "triangle" : "box"',
           },
         },
       ],
