@@ -57,62 +57,33 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     strand: feature.strand === '+' ? 1 : -1,
   }))
 
-  // Create tracks: one for gene features, one for T-DNA insertion
+  // Add T-DNA insertion marker to gene features
+  // Create a visible marker at the insertion point
+  const tdnaInsertionFeature = {
+    uniqueId: `tdna_${selectedLine}`,
+    refName: normalizedChromosome,
+    start: selectedLineData.position - 10, // Make it 20bp wide for visibility
+    end: selectedLineData.position + 10,
+    type: 'repeat_region', // This type typically renders with a distinct style
+    name: `T-DNA: ${selectedLine} at position ${selectedLineData.position}`,
+    strand: 0,
+    score: 1000,
+  }
+
+  // Combine all features on single track
+  const allFeatures = [...geneFeatures, tdnaInsertionFeature]
+
+  // Create single track with both gene and T-DNA features
   const tracks: any[] = [
     {
       type: 'FeatureTrack',
-      trackId: 'gene-features',
-      name: `${gene}`,
+      trackId: 'gene-track',
+      name: `${gene} with T-DNA`,
       assemblyNames: ['A_thaliana'],
       adapter: {
         type: 'FromConfigAdapter',
-        features: geneFeatures,
+        features: allFeatures,
       },
-      displays: [
-        {
-          type: 'LinearBasicDisplay',
-          displayId: 'gene-features-display',
-          renderer: {
-            type: 'SvgFeatureRenderer',
-            color1: '#0080ff',
-            color2: '#0040ff',
-            color3: '#ffffff',
-          },
-        },
-      ],
-    },
-    {
-      type: 'FeatureTrack',
-      trackId: 'tdna-insertion',
-      name: `T-DNA: ${selectedLine}`,
-      assemblyNames: ['A_thaliana'],
-      adapter: {
-        type: 'FromConfigAdapter',
-        features: [
-          {
-            uniqueId: `tdna_${selectedLine}`,
-            refName: normalizedChromosome,
-            start: selectedLineData.position - 1,
-            end: selectedLineData.position + 1,
-            type: 'gene',
-            name: `T-DNA insertion at ${selectedLineData.position}`,
-            strand: 0,
-          }
-        ],
-      },
-      displays: [
-        {
-          type: 'LinearBasicDisplay',
-          displayId: 'tdna-insertion-display',
-          renderer: {
-            type: 'SvgFeatureRenderer',
-            color1: '#ff0000',
-            color2: '#cc0000',
-            color3: '#ffffff',
-            height: 30,
-          },
-        },
-      ],
     },
   ]
 
@@ -143,26 +114,13 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
         ],
         tracks: [
           {
-            id: 'gene-features',
+            id: 'gene-track',
             type: 'FeatureTrack',
-            configuration: 'gene-features',
+            configuration: 'gene-track',
             displays: [
               {
-                id: 'gene-features-LinearBasicDisplay',
+                id: 'gene-track-display',
                 type: 'LinearBasicDisplay',
-                configuration: 'gene-features-LinearBasicDisplay',
-              },
-            ],
-          },
-          {
-            id: 'tdna-insertion',
-            type: 'FeatureTrack',
-            configuration: 'tdna-insertion',
-            displays: [
-              {
-                id: 'tdna-insertion-LinearBasicDisplay',
-                type: 'LinearBasicDisplay',
-                configuration: 'tdna-insertion-LinearBasicDisplay',
               },
             ],
           },
