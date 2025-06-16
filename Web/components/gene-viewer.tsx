@@ -93,11 +93,15 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
           height: 180, // Increased from default (~150) by 20%
           renderer: {
             type: 'SvgFeatureRenderer',
-            color1: 'jexl:get(feature,"color") || "#0080ff"', // Use feature color if available, else blue
-            color2: 'jexl:get(feature,"color") || "#0040ff"',
+            // Explicit color assignment: red for T-DNA, blue for gene features
+            color1: 'jexl:get(feature,"type") === "misc_feature" ? "#ff0000" : "#0080ff"',
+            color2: 'jexl:get(feature,"type") === "misc_feature" ? "#cc0000" : "#0040ff"',
             color3: '#ffffff',
-            // Use triangle glyph for T-DNA insertions (misc_feature), box for gene features
+            // Use triangle glyph for T-DNA insertions, box for gene features
             glyph: 'jexl:get(feature,"type") === "misc_feature" ? "triangle" : "box"',
+            // Position T-DNA insertions at bottom of track, gene features at top
+            yPos: 'jexl:get(feature,"type") === "misc_feature" ? 150 : 20',
+            height: 'jexl:get(feature,"type") === "misc_feature" ? 25 : 20',
           },
         },
       ],
