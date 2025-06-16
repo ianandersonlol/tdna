@@ -61,9 +61,20 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
     },
   }))
 
-  // Don't add T-DNA as a feature - we'll draw it as a custom overlay
-  // Just use gene features
-  const allFeatures = geneFeatures
+  // Add T-DNA insertion as a tall, thin vertical feature
+  const tdnaInsertionFeature = {
+    uniqueId: `tdna_${selectedLine}`,
+    refName: normalizedChromosome,
+    start: selectedLineData.position - 1, // Make it very narrow (2bp)
+    end: selectedLineData.position + 1,
+    type: 'transposable_element_insertion_site', // Use specific insertion type
+    name: `T-DNA: ${selectedLine}`,
+    strand: 0,
+    score: 1000,
+  }
+
+  // Combine all features
+  const allFeatures = [...geneFeatures, tdnaInsertionFeature]
 
   // Create single track with both gene and T-DNA features
   const tracks: any[] = [
@@ -83,43 +94,6 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
           height: 180,
           renderer: {
             type: 'SvgFeatureRenderer',
-            // Add custom afterRender function to draw T-DNA insertion line
-            afterRender: `function(renderProps) {
-              const { region, bpPerPx, offsetPx } = renderProps
-              const insertionPos = ${selectedLineData.position}
-              const insertionLabel = "${selectedLine}"
-              
-              // Calculate screen position of insertion
-              const screenX = (insertionPos - region.start) / bpPerPx - offsetPx
-              
-              // Create SVG line element
-              const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-              line.setAttribute('x1', screenX)
-              line.setAttribute('y1', 20)  // Start near top of track
-              line.setAttribute('x2', screenX)
-              line.setAttribute('y2', 160) // End near bottom of track
-              line.setAttribute('stroke', '#ff0000')
-              line.setAttribute('stroke-width', '2')
-              
-              // Create arrow triangle at bottom
-              const triangle = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-              triangle.setAttribute('points', (screenX-5) + ',160 ' + (screenX+5) + ',160 ' + screenX + ',170')
-              triangle.setAttribute('fill', '#ff0000')
-              
-              // Create label
-              const label = document.createElementNS('http://www.w3.org/2000/svg', 'text')
-              label.setAttribute('x', screenX + 10)
-              label.setAttribute('y', 175)
-              label.setAttribute('fill', '#ff0000')
-              label.setAttribute('font-size', '12')
-              label.textContent = insertionLabel
-              
-              // Add elements to the SVG
-              const svg = renderProps.svg
-              svg.appendChild(line)
-              svg.appendChild(triangle)
-              svg.appendChild(label)
-            }`,
           },
         },
       ],
@@ -182,8 +156,22 @@ export default function GeneViewer({ gene, selectedLine, lineDetails, geneData }
 
   return (
     <div className="border rounded-lg p-4">
-      <div className="h-[600px] w-full">
+      <style jsx>{`
+        /* Target T-DNA insertion features specifically */
+        [data-testid*="tdna_"], 
+        [id*="tdna_"] {
+          fill: #ff0000 !important;
+          stroke: #ff0000 !important;
+        }
+        /* Target transposable_element_insertion_site features */
+        [data-feature-type="transposable_element_insertion_site"] {
+          fill: #ff0000 !important;
+          stroke: #ff0000 !important;
+        }
+      `}</style>
+      <div className="h-[600px] w-full relative">
         <JBrowseLinearGenomeView viewState={state} />
+        
       </div>
       
       
