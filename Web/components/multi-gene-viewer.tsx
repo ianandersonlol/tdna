@@ -57,39 +57,47 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
   }))
 
   // Create T-DNA insertion features with different colors
-  const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b', '#6c5ce7']
+  const colors = ['#ff0000', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', '#f0932b', '#eb4d4b']
   const tdnaFeatures = selectedLineData.map((lineData, index) => ({
-    uniqueId: lineData.lineId,
+    uniqueId: `tdna_${lineData.lineId}`,
     refName: normalizedChromosome, // Use normalized chromosome name
-    start: lineData.position - 1, // JBrowse uses 0-based coordinates
-    end: lineData.position,
-    type: 'insertion',
-    name: lineData.lineId,
+    start: lineData.position - 10, // Make it 20bp wide for visibility
+    end: lineData.position + 10,
+    type: 'misc_feature', // Use misc_feature for custom rendering
+    name: `T-DNA: ${lineData.lineId} at position ${lineData.position}`,
     description: `T-DNA insertion ${lineData.lineId} at position ${lineData.position} (${lineData.hm})`,
+    strand: 0,
+    score: 1000,
     color: colors[index % colors.length],
   }))
 
-  // Create tracks for gene structure and all selected T-DNA lines
+  // Combine all features on a single track
+  const allFeatures = [...geneFeatures, ...tdnaFeatures]
+
+  // Create single track with both gene and T-DNA features
   const tracks: any[] = [
     {
       type: 'FeatureTrack',
-      trackId: 'gene-structure',
-      name: `Gene Structure - ${gene}`,
+      trackId: 'gene-with-tdna',
+      name: `${gene} with T-DNA insertions`,
       assemblyNames: ['A_thaliana'],
       adapter: {
         type: 'FromConfigAdapter',
-        features: geneFeatures,
+        features: allFeatures,
       },
-    },
-    {
-      type: 'FeatureTrack',
-      trackId: 'tdna-insertions',
-      name: `T-DNA Insertions (${selectedLines.length})`,
-      assemblyNames: ['A_thaliana'],
-      adapter: {
-        type: 'FromConfigAdapter',
-        features: tdnaFeatures,
-      },
+      displays: [
+        {
+          type: 'LinearBasicDisplay',
+          displayId: 'gene-with-tdna-display',
+          height: 180, // Increased by 20% to prevent cutoff
+          renderer: {
+            type: 'SvgFeatureRenderer',
+            color1: 'jexl:get(feature,"color") || "#0080ff"', // Use feature color if available
+            color2: 'jexl:get(feature,"color") || "#0040ff"',
+            color3: '#ffffff',
+          },
+        },
+      ],
     },
   ]
 
@@ -116,26 +124,14 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
         ],
         tracks: [
           {
-            id: 'gene-structure',
+            id: 'gene-with-tdna',
             type: 'FeatureTrack',
-            configuration: 'gene-structure',
+            configuration: 'gene-with-tdna',
             displays: [
               {
-                id: 'gene-structure-LinearBasicDisplay',
+                id: 'gene-with-tdna-display',
                 type: 'LinearBasicDisplay',
-                configuration: 'gene-structure-LinearBasicDisplay',
-              },
-            ],
-          },
-          {
-            id: 'tdna-insertions',
-            type: 'FeatureTrack',
-            configuration: 'tdna-insertions',
-            displays: [
-              {
-                id: 'tdna-insertions-LinearBasicDisplay',
-                type: 'LinearBasicDisplay',
-                configuration: 'tdna-insertions-LinearBasicDisplay',
+                height: 180, // Match the track display height
               },
             ],
           },
@@ -146,7 +142,7 @@ export default function MultiGeneViewer({ gene, selectedLines, lineDetails, gene
 
   return (
     <div className="border rounded-lg p-4">
-      <div className="h-96 w-full">
+      <div className="h-[600px] w-full">
         <JBrowseLinearGenomeView viewState={state} />
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
